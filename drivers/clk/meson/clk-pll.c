@@ -32,6 +32,8 @@
 #include <linux/io.h>
 #include <linux/math64.h>
 #include <linux/module.h>
+#include <linux/rational.h>
+#include <linux/arm-smccc.h>
 
 #include "clk-regmap.h"
 #include "clk-secure.h"
