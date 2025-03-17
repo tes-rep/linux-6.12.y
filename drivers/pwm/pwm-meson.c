@@ -60,6 +60,7 @@
 #define MISC_A_EN		BIT(0)
 
 #define MESON_NUM_PWMS		2
+#define XTAL_RATE		24000000
 #define MESON_NUM_MUX_PARENTS	4
 
 static struct meson_pwm_channel_data {
@@ -97,8 +98,9 @@ struct meson_pwm_channel {
 };
 
 struct meson_pwm_data {
-	const char *const parent_names[MESON_NUM_MUX_PARENTS];
-	int (*channels_init)(struct pwm_chip *chip);
+	const char * const *parent_names;
+	unsigned int num_parents;
+	unsigned int nomux:1;
 };
 
 struct meson_pwm {
@@ -124,6 +126,13 @@ static int meson_pwm_request(struct pwm_chip *chip, struct pwm_device *pwm)
 	struct device *dev = pwmchip_parent(chip);
 	int err;
 
+        if (meson->data->nomux) {
+		err = clk_set_rate(channel->clk, XTAL_RATE);
+		if (err) {
+			dev_err(dev, "failed to set pwm clock rate\n");
+			return err;
+		}
+	} else if (channel->clk_parent) {
 	err = clk_prepare_enable(channel->clk);
 	if (err < 0) {
 		dev_err(dev, "failed to enable clock %s: %d\n",
@@ -230,6 +239,11 @@ static void meson_pwm_enable(struct pwm_chip *chip, struct pwm_device *pwm)
 	writel(value, meson->base + REG_MISC_AB);
 
 	spin_unlock_irqrestore(&meson->lock, flags);
+	if (meson->data->nomux) {
+		err = clk_set_rate(channel->clk, XTAL_RATE / (channel->pre_div + 1));
+		if (err)
+			dev_err(meson->chip.dev, "failed to set pwm clock rate\n");
+	}
 }
 
 static void meson_pwm_disable(struct pwm_chip *chip, struct pwm_device *pwm)
@@ -476,6 +490,15 @@ static int meson_pwm_init_channels_s4(struct pwm_chip *chip)
 
 	for (i = 0; i < MESON_NUM_PWMS; i++) {
 		meson->channels[i].clk = of_clk_get(np, i);
+		if (meson->data->nomux) {
+			snprintf(name, sizeof(name), "clkin%u", i);
+			channel->clk = devm_clk_get(dev, name);
+			if (IS_ERR(channel->clk)) {
+				dev_err(dev, "can't get pwm clock: %pe\n", channel->clk);
+				return PTR_ERR(channel->clk);
+			}
+			continue;
+		}
 		if (IS_ERR(meson->channels[i].clk))
 			return dev_err_probe(dev,
 					     PTR_ERR(meson->channels[i].clk),
@@ -530,7 +553,7 @@ static const struct meson_pwm_data pwm_meson8_v2_data = {
 };
 
 static const struct meson_pwm_data pwm_s4_data = {
-	.channels_init = meson_pwm_init_channels_s4,
+	.nomux = 1,
 };
 
 static const struct of_device_id meson_pwm_matches[] = {
