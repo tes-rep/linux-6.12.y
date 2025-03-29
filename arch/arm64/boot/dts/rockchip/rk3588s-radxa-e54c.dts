@@ -266,8 +266,8 @@
         snps,reset-delays-us = <0 10000 10000>;
         snps,reset-gpio = <&gpio3 RK_PB7 GPIO_ACTIVE_LOW>;
 
-        tx_delay = <0x40>;
-        rx_delay = <0x0f>;
+        tx_delay = <0x0f>;
+        rx_delay = <0x00>;
 
         fixed-link {
                 speed = <1000>;
