@@ -15,6 +15,7 @@
 #include "rk3588s.dtsi"
 
 / {
+	/* Ver 1.2 20250328 */
 	model = "Radxa E54C";
 	compatible = "radxa,e54c", "rockchip,rk3582", "rockchip,rk3588s", "rockchip,rk3588";
 
@@ -495,10 +496,10 @@
 	};
 };
 
-&i2c5 {
+&i2c4 {
 	clock-frequency = <400000>;
 	pinctrl-names = "default";
-	pinctrl-0 = <&i2c5m2_xfer>;
+	pinctrl-0 = <&i2c4m2_xfer>;
 	status = "okay";
 
 	fusb302: usb-typec@22 {
@@ -566,11 +567,21 @@
 };
 
 /*
+ * To LCD TFT
+ */
+&i2c5 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&i2c5m2_xfer>;
+	status = "disabled";
+};
+
+/*
  * DIP14 output
  * pin11: I2C6_SCL_M0
  * pin13: I2C6_SDA_M0
  */
 &i2c6 {
+	pinctrl-names = "default";
 	pinctrl-0 = <&i2c6m0_xfer>;
 	status = "okay";
 };
@@ -581,6 +592,7 @@
  * pin5: I2C7_SCL_M3
  */
 &i2c7 {
+	pinctrl-names = "default";
 	pinctrl-0 = <&i2c7m3_xfer>;
 	status = "okay";
 };
