@@ -104,22 +104,6 @@
 		};
 	};
 
-	reserved_momory: reserved-memory {
-		#address-cells = <2>;
-		#size-cells = <2>;
-		ranges;
-
-		/* Reserve 256MB memory for hdmirx-controller@fdee0000
-		 * remove the node if hdmirx is disabled 
-		 */
-		cma_hdmirx: cma-hdmirx {
-			compatible = "shared-dma-pool";
-			reusable;
-			size = <0x0 (256 * 0x100000)>;
-			status = "disabled";
-		};
-	};
-
 	/* dc-in or typec-in: maximum supported voltage: 22V */
 	vcc12v_dcin: vcc12v-dcin {
 		compatible = "regulator-fixed";
@@ -469,7 +453,7 @@
 };
 
 &hdmi_receiver {
-	hpd-gpios = <&gpio2 RK_PB5 GPIO_ACTIVE_LOW>;
+	hpd-gpios = <&gpio2 RK_PB5 GPIO_ACTIVE_HIGH>;
 	pinctrl-0 = <&hdmim1_rx_cec &hdmim1_rx_hpdin &hdmim1_rx_scl &hdmim1_rx_sda &hdmirx_hpd>;
 	pinctrl-names = "default";
 	status = "okay";
