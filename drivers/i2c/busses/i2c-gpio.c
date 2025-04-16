@@ -384,7 +384,7 @@ static int i2c_gpio_probe(struct platform_device *pdev)
 	if (IS_ERR(priv->sda))
 		return PTR_ERR(priv->sda);
 	
-	if (pdata->scl_is_open_drain || pdata->sda_scl_output_only)
+	if (pdata->scl_is_open_drain || sda_scl_output_only)
 		gflags = GPIOD_OUT_HIGH;
 	else
 		gflags = GPIOD_OUT_HIGH_OPEN_DRAIN;
