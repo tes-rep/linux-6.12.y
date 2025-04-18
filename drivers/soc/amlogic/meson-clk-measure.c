@@ -617,6 +617,7 @@ static struct meson_msr_id clk_msr_sc2[CLK_MSR_MAX] = {
 	CLK_MSR_ID(197, "dspa_osc_ring(SVT16)"),
 };
 
+
 static int meson_measure_id(struct meson_msr_id *clk_msr_id,
 			       unsigned int duration)
 {
@@ -805,7 +806,7 @@ static const struct of_device_id meson_msr_match_table[] = {
 		.compatible = "amlogic,meson-sm1-clk-measure",
 		.data = (void *)clk_msr_sm1,
 	},
-        {
+	{
 		.compatible = "amlogic,meson-sc2-clk-measure",
 		.data = (void *)clk_msr_sc2,
 	},
