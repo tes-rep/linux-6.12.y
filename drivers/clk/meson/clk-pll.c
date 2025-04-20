@@ -595,4 +595,4 @@ MODULE_DESCRIPTION("Amlogic PLL driver");
 MODULE_AUTHOR("Carlo Caione <carlo@endlessm.com>");
 MODULE_AUTHOR("Jerome Brunet <jbrunet@baylibre.com>");
 MODULE_LICENSE("GPL");
-MODULE_IMPORT_NS(CLK_MESON);
+MODULE_IMPORT_NS("CLK_MESON");
