@@ -345,6 +345,7 @@ static int i2c_gpio_probe(struct platform_device *pdev)
 	struct device *dev = &pdev->dev;
 	struct fwnode_handle *fwnode = dev_fwnode(dev);
 	enum gpiod_flags gflags;
+	bool sda_scl_output_only;
 	int ret;
 
 	priv = devm_kzalloc(dev, sizeof(*priv), GFP_KERNEL);
@@ -374,15 +375,16 @@ static int i2c_gpio_probe(struct platform_device *pdev)
 	 * handle them as we handle any other output. Else we enforce open
 	 * drain as this is required for an I2C bus.
 	 */
-	if (pdata->sda_is_open_drain || pdata->sda_has_no_pullup)
+	sda_scl_output_only = pdata->sda_is_output_only && pdata->scl_is_output_only;
+ 	if (pdata->sda_is_open_drain || sda_scl_output_only)
 		gflags = GPIOD_OUT_HIGH;
 	else
 		gflags = GPIOD_OUT_HIGH_OPEN_DRAIN;
 	priv->sda = i2c_gpio_get_desc(dev, "sda", 0, gflags);
 	if (IS_ERR(priv->sda))
 		return PTR_ERR(priv->sda);
-
-	if (pdata->scl_is_open_drain || pdata->scl_has_no_pullup)
+	
+	if (pdata->scl_is_open_drain || sda_scl_output_only)
 		gflags = GPIOD_OUT_HIGH;
 	else
 		gflags = GPIOD_OUT_HIGH_OPEN_DRAIN;
