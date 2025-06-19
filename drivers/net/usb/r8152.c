@@ -7058,7 +7058,7 @@ static int r8152_led_configuration(struct r8152 *tp)
 
 	if (ret)
 		return ret;
-	
+
 	ocp_write_word(tp, MCU_TYPE_PLA, PLA_LEDSEL, led_data);
 
 	return 0;
