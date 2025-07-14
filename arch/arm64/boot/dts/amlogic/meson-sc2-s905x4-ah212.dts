@@ -473,7 +473,7 @@
 &ethmac {
     status = "okay";
     phy-mode = "rmii";
-    phy-handle = <&internal_phy>;
+    phy-handle = <&internal_ephy>;
 
     fixed-link {
         speed = <100>;
