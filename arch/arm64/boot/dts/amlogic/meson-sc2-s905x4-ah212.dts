@@ -182,11 +182,6 @@
 		compatible = "amlogic,cpufreq-meson";
 		status = "okay";
 	};
-
-        internal_phy: ethernet-phy@8 {
-                reg = <8>;
-                compatible = "ethernet-phy-ieee802.3-c22";
-        };
 	
 	i2c-led {
 		compatible = "i2c-gpio";
