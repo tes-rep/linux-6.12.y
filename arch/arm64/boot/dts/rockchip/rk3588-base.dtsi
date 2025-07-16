@@ -1140,8 +1140,8 @@
 		};
 	};
 
-	rknn_core_top: npu@fdab0000 {
-		compatible = "rockchip,rk3588-rknn-core-top";
+	rknn_core_0: npu@fdab0000 {
+		compatible = "rockchip,rk3588-rknn-core";
 		reg = <0x0 0xfdab0000 0x0 0x1000>,
 		      <0x0 0xfdab1000 0x0 0x1000>,
 		      <0x0 0xfdab3000 0x0 0x1000>;
@@ -1181,6 +1181,8 @@
 		clocks = <&cru ACLK_NPU1>, <&cru HCLK_NPU1>,
 			 <&scmi_clk SCMI_CLK_NPU>, <&cru PCLK_NPU_ROOT>;
 		clock-names = "aclk", "hclk", "npu", "pclk";
+		assigned-clocks = <&scmi_clk SCMI_CLK_NPU>;
+		assigned-clock-rates = <200000000>;
 		resets = <&cru SRST_A_RKNN1>, <&cru SRST_H_RKNN1>;
 		reset-names = "srst_a", "srst_h";
 		power-domains = <&power RK3588_PD_NPU1>;
@@ -1209,6 +1211,8 @@
 		clocks = <&cru ACLK_NPU2>, <&cru HCLK_NPU2>,
 			 <&scmi_clk SCMI_CLK_NPU>, <&cru PCLK_NPU_ROOT>;
 		clock-names = "aclk", "hclk", "npu", "pclk";
+		assigned-clocks = <&scmi_clk SCMI_CLK_NPU>;
+		assigned-clock-rates = <200000000>;
 		resets = <&cru SRST_A_RKNN2>, <&cru SRST_H_RKNN2>;
 		reset-names = "srst_a", "srst_h";
 		power-domains = <&power RK3588_PD_NPU2>;
