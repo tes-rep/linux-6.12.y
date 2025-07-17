@@ -6,18 +6,23 @@
 export MTK_COMBO_CHIP=MT7668
 export HIF=sdio
 export CONFIG_MTK_WIFI_ONLY=m
-WLAN_CHIP_ID := mt7668
+export CONFIG_MTK_COMBO=m
+export CONFIG_MTK_COMBO_WIFI=m
+export CONFIG_MTK_COMBO_COMM=m
+export CONFIG_MTK_COMBO_COMM_UART=m
+export CONFIG_MTK_COMBO_COMM_SDIO=m
+export CONFIG_MT_WIFI_CHRDEV=m
+WLAN_CHIP_ID := mt76x8
 CONFIG_MT7668=m
-
 PWD=$(shell pwd)
 DRIVER_DIR=$(PWD)
 
 ifeq ($(HIF),)
-    HIF=sdio
+    HIF=usb
 endif
 
 export CONFIG_MTK_COMBO_WIFI_HIF=$(HIF)
-MODULE_NAME := wlan_$(WLAN_CHIP_ID)
+MODULE_NAME := wlan_$(WLAN_CHIP_ID)_$(HIF)
 
 export CONFIG_MTK_PREALLOC_MEMORY=n
 
@@ -41,17 +46,43 @@ endif
 # Platform specific
 ##############################################################
 # Set default platform
-PLATFORM:=AML950X2
+#PLATFORM:=MT53XX
+PLATFORM:=AML950X4
 
 ifeq ($(TARGET_PRODUCT), rango)
 $(warning TARGET_PRODUCT is $(TARGET_PRODUCT))
-PLATFORM := AML950X2
+PLATFORM := AML950X4
 endif
 
 
-ifeq ($(PLATFORM),AML950X2)
+ifeq ($(PLATFORM),AML950X4)
+$(warning PLATFORM is $(PLATFORM))
+#KSRC:= $(shell pwd)/$(LINUX_SRC)
+#$(warning PLATFORM is $(KSRC))
 LINUX_SRC = $(KERNEL_SRC)
 endif
+
+ifeq ($(PLATFORM),avatar)
+$(warning CFG_SUPPORT_FWPATH_PREFIX is $(CFG_SUPPORT_FWPATH_PREFIX))
+CFG_SUPPORT_FWPATH_PREFIX:=y
+endif
+64BIT_MODE := false
+LINUX_ROOT ?= $(word 1, $(subst /apollo/,/apollo /, $(shell pwd -L)))
+
+
+ifeq "$(CC)" "gcc"
+CC ?= $(CROSS_COMPILE)gcc
+endif
+
+$(warning =============================================)
+$(warning wifi driver LINUX_SRC=$(LINUX_SRC))
+$(warning CROSS_COMPILE=$(CROSS_COMPILE))
+$(warning KERNEL_CROSS_COMPILE=$(KERNEL_CROSS_COMPILE))
+$(warning =============================================)
+
+#- - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# MT53XX end
+#= = = = = = = = = = = = = = = = = = = = = = = = = = = =
 
 
 ##############################################################
@@ -92,7 +123,7 @@ CFG_ENABLE_EFUSE_MAC_ADDR=1
 
 #CFG_SUPPORT_SINGLE_SKU_LOCAL_DB=0
 
-CFG_SUPPORT_DFS_MASTER=1
+#CFG_SUPPORT_DFS_MASTER=1
 
 CFG_SCAN_CHANNEL_SPECIFIED=1
 
@@ -243,12 +274,12 @@ ifeq ($(WLAN_CHIP_ID),)
     WLAN_CHIP_ID := MT6632
 endif
 
-ccflags-y += -w
 ccflags-y += -DCFG_SUPPORT_DEBUG_FS=0
 ccflags-y += -DWLAN_INCLUDE_PROC
 ccflags-y += -DCFG_SUPPORT_AGPS_ASSIST=1
 ccflags-y += -DCFG_SUPPORT_TSF_USING_BOOTTIME=1
 ccflags-y += -Wno-error
+#ccflags-y += -Wundef
 #ccflags-y += -Wno-implicit-function-declaration
 #ccflags-y += -Wno-incompatible-pointer-types
 ccflags-y:=$(filter-out -U$(WLAN_CHIP_ID),$(ccflags-y))
@@ -258,14 +289,18 @@ CONFIG_MTK_WIFI_MCC_SUPPORT=y
 CONFIG_MTK_WPA3_SUPPORT=y
 ifeq ($(CONFIG_MTK_WIFI_MCC_SUPPORT), y)
     ccflags-y += -DCFG_SUPPORT_CHNL_CONFLICT_REVISE=0
+     $(info DCFG_SUPPORT_CHNL_CONFLICT_REVISE=0)
 else
     ccflags-y += -DCFG_SUPPORT_CHNL_CONFLICT_REVISE=1
+     $(info DCFG_SUPPORT_CHNL_CONFLICT_REVISE=1)
 endif
 
 ifeq ($(CONFIG_MTK_AEE_FEATURE), y)
     ccflags-y += -DCFG_SUPPORT_AEE=1
+    $(info DCFG_SUPPORT_AEE=1)
 else
     ccflags-y += -DCFG_SUPPORT_AEE=0
+    $(info DCFG_SUPPORT_AEE=0)
 endif
 
 ifeq ($(CONFIG_MTK_WPA3_SUPPORT), y)
@@ -316,12 +351,16 @@ endif
 
 ifneq ($(CFG_CFG80211_VERSION),)
 VERSION_STR = $(subst ",,$(subst ., , $(subst -, ,$(subst v,,$(CFG_CFG80211_VERSION)))))
+$(info VERSION_STR=$(VERSION_STR))
 X = $(firstword $(VERSION_STR))
 Y = $(word 2 ,$(VERSION_STR))
 Z = $(word 3 ,$(VERSION_STR))
 VERSION := $(shell echo "$$(( $X * 65536 + $Y * 256 + $Z))" )
 ccflags-y += -DCFG_CFG80211_VERSION=$(VERSION)
+$(info DCFG_CFG80211_VERSION=$(VERSION))
 endif
+
+$(info HIF=$(CONFIG_MTK_COMBO_WIFI_HIF))
 
 ifeq ($(CONFIG_MTK_PASSPOINT_R1_SUPPORT), y)
     ccflags-y += -DCFG_SUPPORT_PASSPOINT=1
@@ -359,19 +398,17 @@ endif
 ifeq ($(MODULE_NAME),)
 	MODULE_NAME := wlan_$(shell echo $(strip $(WLAN_CHIP_ID)) | tr A-Z a-z)_$(CONFIG_MTK_COMBO_WIFI_HIF)
 endif
+#src = $(LINUX_SRC)/$(M)
 
 ccflags-y += -DDBG=0
-ccflags-y += -I$(srctree)/$(src)/include/nic
-ccflags-y += -I$(srctree)/$(src)/include/mgmt
-ccflags-y += -I$(srctree)/$(src)/os/linux/include
-ccflags-y += -I$(srctree)/$(src)/os -I$(src)/os/linux/include
-ccflags-y += -I$(srctree)/$(src)/include -I$(src)/include/nic -I$(srctree)/$(src)/include/mgmt -I$(srctree)/$(src)/include/chips
+ccflags-y += -I$(src)/os -I$(src)/os/linux/include
+ccflags-y += -I$(src)/include -I$(src)/include/nic -I$(src)/include/mgmt -I$(src)/include/chips
 ifeq ($(CONFIG_MTK_COMBO_WIFI_HIF), sdio)
-ccflags-y += -I$(srctree)/$(src)/os/linux/hif/sdio/include
+ccflags-y += -I$(src)/os/linux/hif/sdio/include
 else ifeq ($(CONFIG_MTK_COMBO_WIFI_HIF), pcie)
-ccflags-y += -I$(srctree)/$(src)/os/linux/hif/pcie/include
+ccflags-y += -I$(src)/os/linux/hif/pcie/include
 else ifeq ($(CONFIG_MTK_COMBO_WIFI_HIF), usb)
-ccflags-y += -I$(srctree)/$(src)/os/linux/hif/usb/include
+ccflags-y += -I$(src)/os/linux/hif/usb/include
 endif
 
 ifneq ($(PLATFORM_FLAGS), )
@@ -382,6 +419,7 @@ ifeq ($(CONFIG_MTK_WIFI_ONLY),$(filter $(CONFIG_MTK_WIFI_ONLY),m y))
 obj-$(CONFIG_MTK_WIFI_ONLY) += $(MODULE_NAME).o
 else
 obj-$(CONFIG_MTK_COMBO_WIFI) += $(MODULE_NAME).o
+#obj-y += $(MODULE_NAME).o
 endif
 
 # ---------------------------------------------------
@@ -521,14 +559,18 @@ $(MODULE_NAME)-objs  += $(CHIPS_OBJS)
 #
 ifeq ($(CONFIG_MTK_PREALLOC_MEMORY), y)
 ccflags-y += -DCFG_PREALLOC_MEMORY
-ccflags-y += -I$(srctree)/$(src)/prealloc/include
+ccflags-y += -I$(src)/prealloc/include
 MODULE_NAME_PREALLOC = mtprealloc
 PREALLOC_OBJS := prealloc/prealloc.o
 $(MODULE_NAME_PREALLOC)-objs += $(PREALLOC_OBJS)
 obj-m += $(MODULE_NAME_PREALLOC).o
 endif
 
-ccflags-y += -DDRIVER_BUILD_DATE=${date}
+#DRIVER_BUILD_DATE=$(shell date +%Y%m%d%H%M%S)
+ccflags-y += -DDRIVER_BUILD_DATE='"20221215231831"'
+
+
+
 
 ##############################################################
 # Compile settings
@@ -537,12 +579,19 @@ ccflags-y += -DDRIVER_BUILD_DATE=${date}
 all: modules
 
 modules:
-	$(MAKE) -C $(KERNEL_SRC) M=$(shell pwd) MODULE_NAME=$(MODULE_NAME) PLATFORM_FLAGS="$(PLATFORM_FLAGS)" modules
+	@echo cross_comple = $(CROSS_COMPILE)
+	@echo CFLAGS = $(CFLAGS)
+	@echo EXTRA_CFLAGS = $(EXTRA_CFLAGS)
+	$(MAKE) -C $(KERNEL_SRC) M=$(M) MODULE_NAME=$(MODULE_NAME) PLATFORM_FLAGS="$(PLATFORM_FLAGS)" modules
 
 modules_install:
 	@$(MAKE) INSTALL_MOD_STRIP=1 M=$(M) -C $(KERNEL_SRC) modules_install
 	mkdir -p ${OUT_DIR}/../vendor_lib/modules
 	cd ${OUT_DIR}/$(M)/; find -name $(MODULE_NAME).ko -exec cp {} ${OUT_DIR}/../vendor_lib/modules/$(MODULE_NAME).ko \;
+
+
+
+
 
 driver:
 	+make -C $(KSRC) M=$(shell pwd)/$(DRIVER_DIR) PLATFORM_FLAGS="$(PLATFORM_FLAGS)" WLAN_CHIP_ID=$(WLAN_CHIP_ID) modules
@@ -560,12 +609,92 @@ endif
 endif
 endif
 
+##############################################################
+# Post processing
+##############################################################
 
+#= = = = = = = = = = = = = = = = = = = = = = = = = = = =
+# MT53XX start
+#- - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#ifeq ($(PLATFORM),MT53XX)
+#ifneq ($(DRIVER_PARTIAL_BUILD), y)
+#ifneq ($(ANDROID),true)
+#	if [ ! -d $(OUTPUT_ROOT)/basic/wifi_ko ]; then \
+#		mkdir -p $(OUTPUT_ROOT)/basic/wifi_ko/; \
+#	fi
+#	if [ -d $(OUTPUT_ROOT)/basic/wifi_ko ]; then \
+#		cp -f $(OUT_STA_KO) $(OUTPUT_ROOT)/basic/wifi_ko/$(MODULE_NAME).ko; \
+#		$(KERNEL_STRIP) $(STRIP_FLAG) $(OUTPUT_ROOT)/basic/wifi_ko/$(MODULE_NAME).ko; \
+#	fi
+#else
+#	if [ ! -d $(OUTPUT_ROOT)/basic/modules ]; then \
+#		mkdir -p $(OUTPUT_ROOT)/basic/modules/; \
+#	fi
+#ifeq ($(MUL_WIFI_HW_COMPATIBLE), true)
+#	if [ -d $(OUTPUT_ROOT)/basic/modules ]; then \
+#		cp -f $(OUT_STA_KO) $(OUTPUT_ROOT)/basic/modules/wlan_mt7668.ko; \
+#	fi
+#else
+#	if [ -d $(OUTPUT_ROOT)/basic/modules ]; then \
+#		cp -f $(OUT_STA_KO) $(OUTPUT_ROOT)/basic/modules/wlan.ko; \
+#	fi
+#endif
+#ifeq ($(CONFIG_MTK_PREALLOC_MEMORY), y)
+#ifeq ($(MUL_WIFI_HW_COMPATIBLE), true)
+#	if [ -d $(OUTPUT_ROOT)/basic/modules ]; then \
+#		cp -f $(OUT_STA_KO_DIR)/$(MODULE_NAME)_prealloc.ko $(OUTPUT_ROOT)/basic/modules/mtprealloc_mt7668.ko; \
+#	fi
+#else
+#	if [ -d $(OUTPUT_ROOT)/basic/modules ]; then \
+#		cp -f $(OUT_STA_KO_DIR)/$(MODULE_NAME)_prealloc.ko $(OUTPUT_ROOT)/basic/modules/mtprealloc.ko; \
+#	fi
+#endif
+#endif
+#endif # ifneq ($(ANDROID),true)
+#ifeq ($(S_PLATFORM),true)
+#	if [ -d $(OUTPUT_ROOT)/basic/modules ]; then \
+#		cp -f $(ANDROID_BUILD_TOP)/vendor/mediatek/open/hardware/prebuilt/wifi/WIFI_RAM_CODE_MT7668.bin $(OUTPUT_ROOT)/basic/modules; \
+#		cp -f $(ANDROID_BUILD_TOP)/vendor/mediatek/open/hardware/prebuilt/wifi/WIFI_RAM_CODE2_USB_MT7668.bin $(OUTPUT_ROOT)/basic/modules; \
+#		cp -f $(ANDROID_BUILD_TOP)/vendor/mediatek/open/hardware/prebuilt/wifi/wifi.cfg $(OUTPUT_ROOT)/basic/modules; \
+#		cp -f $(ANDROID_BUILD_TOP)/vendor/mediatek/open/hardware/prebuilt/wifi/TxPwrLimit_MT76x8.dat $(OUTPUT_ROOT)/basic/modules; \
+#		cp -f $(ANDROID_BUILD_TOP)/vendor/mediatek/open/hardware/prebuilt/bt/mt7668/mt7668_patch_e1_hdr.bin $(OUTPUT_ROOT)/basic/modules; \
+#		cp -f $(ANDROID_BUILD_TOP)/vendor/mediatek/open/hardware/prebuilt/bt/mt7668/mt7668_patch_e2_hdr.bin $(OUTPUT_ROOT)/basic/modules; \
+#	fi
+#endif
+#endif # ifneq ($(DRIVER_PARTIAL_BUILD), y)
+#endif # ifeq ($(PLATFORM),MT53XX)
+#- - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# MT53XX end
+#= = = = = = = = = = = = = = = = = = = = = = = = = = = =
 
 clean: driver_clean
-
+#ifeq ($(PLATFORM),MT53XX)
+#ifeq ($(S_PLATFORM),true)
+#	if [ -d $(OUTPUT_ROOT)/basic/modules ]; then \
+#		rm -f $(OUTPUT_ROOT)/basic/modules/WIFI_RAM_CODE_MT7668.bin; \
+#		rm -f $(OUTPUT_ROOT)/basic/modules/WIFI_RAM_CODE2_USB_MT7668.bin; \
+#		rm -f $(OUTPUT_ROOT)/basic/modules/wifi.cfg; \
+#		rm -f $(OUTPUT_ROOT)/basic/modules/TxPwrLimit_MT76x8.dat; \
+#		rm -f $(OUTPUT_ROOT)/basic/modules/mt7668_patch_e1_hdr.bin; \
+#		rm -f $(OUTPUT_ROOT)/basic/modules/mt7668_patch_e2_hdr.bin; \
+#	fi
+#endif
+#endif
 
 driver_clean:
+#ifneq ($(ANDROID),true)
+#	rm -rf $(THIRDPARTY_LIB_ROOT)/wlan
+#endif
+#if [ -d $(DRIVER_DIR) ]; then \
+#	cd $(DRIVER_DIR); \
+#	find -L \
+#	\( -name '*.ko' -o -name '.*.cmd' \
+#	-o -name '*.o' -o -name '*.mod.c' \
+#	-o -name '*.o.d' \
+#	-o -name 'modules.order' \
+#	-o -name 'Module.symvers' \) -type f -print | xargs rm -f; \
+#	find -L \( -name '.tmp_versions' \) -print | xargs rm -rf {}; \
+#fi
+
 
 .PHONY: all clean driver driver_clean
-
