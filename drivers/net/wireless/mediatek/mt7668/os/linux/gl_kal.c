@@ -4905,7 +4905,7 @@ void kalAcquireWDevMutex(IN struct net_device *pDev)
 	ASSERT(pDev);
 
 	DBGLOG(INIT, TEMP, "WDEV_LOCK Try to acquire\n");
-#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 7, 0)
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 12, 0)
 	mutex_lock(&(pDev->ieee80211_ptr)->mtx);
 #else
 	wiphy_lock(pDev->ieee80211_ptr->wiphy);
@@ -4926,7 +4926,8 @@ void kalAcquireWDevMutex(IN struct net_device *pDev)
 void kalReleaseWDevMutex(IN struct net_device *pDev)
 {
 	ASSERT(pDev);
-#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 7, 0)
+	
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 12, 0)
 	mutex_unlock(&(pDev->ieee80211_ptr)->mtx);
 #else
 	wiphy_unlock(pDev->ieee80211_ptr->wiphy);
@@ -5028,7 +5029,7 @@ static void kalProcessCfg80211TxPkt(struct PARAM_CFG80211_REQ *prCfg80211Req)
 static void kalProcessCfg80211RxPkt(struct PARAM_CFG80211_REQ *prCfg80211Req)
 {
 
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(6, 7, 0))
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(6, 12, 0))
 	struct cfg80211_rx_assoc_resp_data resp = {
 		.uapsd_queues = -1,
 	};
