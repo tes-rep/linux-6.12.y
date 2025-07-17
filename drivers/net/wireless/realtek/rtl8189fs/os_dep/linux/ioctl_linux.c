@@ -64,6 +64,10 @@ extern u8 convert_ip_addr(u8 hch, u8 mch, u8 lch);
 u32 rtw_rates[] = {1000000, 2000000, 5500000, 11000000,
 	6000000, 9000000, 12000000, 18000000, 24000000, 36000000, 48000000, 54000000};
 
+static const char *const iw_operation_mode[] = {
+	"Auto", "Ad-Hoc", "Managed",  "Master", "Repeater", "Secondary", "Monitor"
+};
+
 /**
  * hwaddr_aton - Convert ASCII string to MAC address
  * @txt: MAC address as a string (e.g., "00:11:22:33:44:55")
@@ -7456,7 +7460,7 @@ static int rtw_set_wps_beacon(struct net_device *dev, struct ieee_param *param, 
 
 		_rtw_memcpy(pmlmepriv->wps_beacon_ie, param->u.bcn_ie.buf, ie_len);
 
-		update_beacon(padapter, _VENDOR_SPECIFIC_IE_, wps_oui, _TRUE, 0);
+		update_beacon(padapter, _VENDOR_SPECIFIC_IE_, wps_oui, _TRUE);
 
 		pmlmeext->bstart_bss = _TRUE;
 
@@ -7964,6 +7968,7 @@ static int rtw_wowlan_ctrl(struct net_device *dev,
 	struct wowlan_ioctl_param poidparam;
 	struct pwrctrl_priv *pwrctrlpriv = adapter_to_pwrctl(padapter);
 	struct mlme_priv *pmlmepriv = &padapter->mlmepriv;
+	struct sta_info	*psta = NULL;
 	int ret = 0;
 	systime start_time = rtw_get_current_time();
 	poidparam.subcode = 0;
@@ -8035,7 +8040,8 @@ static int rtw_wowlan_set_pattern(struct net_device *dev,
 	struct pwrctrl_priv *pwrpriv = adapter_to_pwrctl(padapter);
 	struct mlme_priv *pmlmepriv = &padapter->mlmepriv;
 	struct wowlan_ioctl_param poidparam;
-	int ret = 0;
+	int ret = 0, len = 0, i = 0;
+	systime start_time = rtw_get_current_time();
 	u8 input[wrqu->data.length];
 	u8 index = 0;
 
@@ -8165,7 +8171,7 @@ static int rtw_pm_set(struct net_device *dev,
 		if (sscanf(extra + 9, "%u", &mode) > 0)
 			ret = rtw_pm_set_lps_1t1r(padapter, mode);
 #endif
-	}
+	} 
 #ifdef CONFIG_WOWLAN
 	else if (_rtw_memcmp(extra, "wow_lps=", 8)) {
 		sscanf(extra + 8, "%u", &mode);
@@ -9586,7 +9592,7 @@ static int rtw_mp_efuse_set(struct net_device *dev,
 			err = 0;
 			goto exit;
 		}
-
+	
 		rtw_write8(padapter, 0xa3, 0x05);
 		BTStatus = rtw_read8(padapter, 0xa0);
 		RTW_INFO("%s: btwmap before read 0xa0 BT Status =0x%x\n", __FUNCTION__, BTStatus);
@@ -10204,7 +10210,7 @@ static int rtw_priv_mp_get(struct net_device *dev,
 	case MP_DPK:
 		RTW_INFO("set MP_DPK\n");
 		status = rtw_mp_dpk(dev, info, wdata, extra);
-		break;
+		__attribute__((__fallthrough__));
 	default:
 		status = -EIO;
 	}
@@ -10458,39 +10464,40 @@ static int rtw_priv_get(struct net_device *dev,
 			}
 			i--;
 		}
-		if (subcmd == MP_CHANNEL || subcmd == MP_BANDWIDTH || subcmd == MP_START)
+		if (subcmd == MP_CHANNEL || subcmd == MP_BANDWIDTH || subcmd == MP_START || subcmd == MP_DPK)
 			p_iqk_info->rfk_forbidden = _FALSE;
 		rtw_priv_mp_get(dev, info, wdata, extra);
-		rtw_msleep_os(10); /* delay 5ms for sending pkt before exit adb shell operation */
 		p_iqk_info->rfk_forbidden = _FALSE;
 #endif
-	} else {
-			switch (subcmd) {
+		return 0;
+	}
+
+	switch (subcmd) {
 #if defined(CONFIG_RTL8723B)
-			case MP_SetBT:
-				RTW_INFO("set MP_SetBT\n");
-				rtw_mp_SetBT(dev, info, wdata, extra);
-				break;
+	case MP_SetBT:
+		RTW_INFO("set MP_SetBT\n");
+		rtw_mp_SetBT(dev, info, wdata, extra);
+		break;
 #endif
 #ifdef CONFIG_SDIO_INDIRECT_ACCESS
-			case MP_SD_IREAD:
-				rtw_mp_sd_iread(dev, info, wrqu, extra);
-				break;
-			case MP_SD_IWRITE:
-				rtw_mp_sd_iwrite(dev, info, wrqu, extra);
-				break;
+	case MP_SD_IREAD:
+		rtw_mp_sd_iread(dev, info, wrqu, extra);
+		break;
+	case MP_SD_IWRITE:
+		rtw_mp_sd_iwrite(dev, info, wrqu, extra);
+		break;
 #endif
 #ifdef CONFIG_APPEND_VENDOR_IE_ENABLE
-			case VENDOR_IE_GET:
-				RTW_INFO("get case VENDOR_IE_GET\n");
-				rtw_vendor_ie_get(dev , info , wdata , extra);
-				break;
+	case VENDOR_IE_GET:
+		RTW_INFO("get case VENDOR_IE_GET\n");
+		rtw_vendor_ie_get(dev , info , wdata , extra);
+		break;
 #endif
-			default:
-				return -EIO;
-			}
-		}
+	default:
+		return -EIO;
+	}
 
+	rtw_msleep_os(10); /* delay 5ms for sending pkt before exit adb shell operation */
 	return 0;
 }
 
@@ -11670,10 +11677,10 @@ static void printdata(u8 *pbuf, u32 len)
 	}
 
 	if (i < len) {
-#ifdef __BIG_ENDIAN
+#ifdef CONFIG_BIG_ENDIAN
 		for (; i < len, i++)
 			printk("%02X", pbuf + i);
-#else /* __LITTLE_ENDIAN */
+#else /* CONFIG_LITTLE_ENDIAN */
 #if 0
 		val = 0;
 		_rtw_memcpy(&val, pbuf + i, len - i);
@@ -11688,7 +11695,7 @@ static void printdata(u8 *pbuf, u32 len)
 		n = (4 - n) * 2;
 		printk("%8s", str + n);
 #endif
-#endif /* __BIG_ENDIAN */
+#endif /* CONFIG_LITTLE_ENDIAN */
 	}
 	printk("\n");
 }
@@ -12485,12 +12492,8 @@ static int _rtw_ioctl_wext_private(struct net_device *dev, union iwreq_data *wrq
 	if (!input_len)
 		return -EINVAL;
 	input = rtw_zmalloc(input_len);
-
-	if (input == NULL) {
-		err = -EOPNOTSUPP;
-		goto exit;
-	}
-
+	if (NULL == input)
+		return -ENOMEM;
 	if (copy_from_user(input, wdata.data.pointer, input_len)) {
 		err = -EFAULT;
 		goto exit;
@@ -12498,6 +12501,11 @@ static int _rtw_ioctl_wext_private(struct net_device *dev, union iwreq_data *wrq
 	input[input_len - 1] = '\0';
 	ptr = input;
 	len = input_len;
+
+	if (ptr == NULL) {
+		err = -EOPNOTSUPP;
+		goto exit;
+	}
 
 	sscanf(ptr, "%16s", cmdname);
 	cmdlen = strlen(cmdname);

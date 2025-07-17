@@ -220,8 +220,8 @@ typedef struct _WLAN_BCN_INFO {
 
 enum bss_type {
 	BSS_TYPE_UNDEF,
-	BSS_TYPE_BCN = 1,
-	BSS_TYPE_PROB_REQ = 2,
+	BSS_TYPE_PROB_REQ = 1,
+	BSS_TYPE_BCN = 2,
 	BSS_TYPE_PROB_RSP = 3,
 };
 
@@ -256,11 +256,24 @@ __inline  static uint get_WLAN_BSSID_EX_sz(WLAN_BSSID_EX *bss)
 	return sizeof(WLAN_BSSID_EX) - MAX_IE_SZ + bss->IELength;
 }
 
+struct beacon_keys {
+	u8 ssid[IW_ESSID_MAX_SIZE];
+	u32 ssid_len;
+	u8 bcn_channel;
+	u16 ht_cap_info;
+	u8 ht_info_infos_0_sco; /* bit0 & bit1 in infos[0] is second channel offset */
+	int encryp_protocol;
+	int pairwise_cipher;
+	int group_cipher;
+	int is_8021x;
+};
+
 struct	wlan_network {
 	_list	list;
 	int	network_type;	/* refer to ieee80211.h for WIRELESS_11A/B/G */
 	int	fixed;			/* set to fixed when not to be removed as site-surveying */
 	systime last_scanned; /* timestamp for the network */
+	systime last_non_hidden_ssid_ap;
 #ifdef CONFIG_RTW_MESH
 #if CONFIG_RTW_MESH_ACNODE_PREVENT
 	systime acnode_stime;
@@ -269,7 +282,10 @@ struct	wlan_network {
 #endif
 	int	aid;			/* will only be valid when a BSS is joinned. */
 	int	join_res;
+	struct beacon_keys bcn_keys;
+	bool bcn_keys_valid;
 	WLAN_BSSID_EX	network; /* must be the last item */
+	WLAN_BCN_INFO	BcnInfo;
 };
 
 enum VRTL_CARRIER_SENSE {

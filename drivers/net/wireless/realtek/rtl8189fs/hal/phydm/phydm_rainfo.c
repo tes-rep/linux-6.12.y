@@ -458,6 +458,9 @@ void phydm_c2h_ra_report_handler(void *dm_void, u8 *cmd_buf, u8 cmd_len)
 		ra_tab->mu1_rate[gid_index] = rate;
 	}
 #endif
+
+	/*@ra_tab->link_tx_rate[macid] = rate;*/
+
 	if (is_sta_active(sta)) {
 		sta->ra_info.curr_tx_rate = rate;
 		sta->ra_info.curr_tx_bw = (enum channel_width)curr_bw;
@@ -962,9 +965,6 @@ u64 phydm_get_bb_mod_ra_mask(void *dm_void, u8 sta_idx)
 		} else if (bw == CHANNEL_WIDTH_80) {
 		/* @AC 80MHz doesn't support 3SS MCS6*/
 			ra_mask_bitmap &= 0x000fffbffffff010;
-		} else if (bw == CHANNEL_WIDTH_160) {
-		/* @AC 80M+80M doesn't support 3SS & 4SS*/
-			ra_mask_bitmap &= 0xfffff010;
 		}
 	} else {
 		PHYDM_DBG(dm, DBG_RA, "[Warrning] RA mask is Not found\n");
@@ -1096,25 +1096,14 @@ u8 phydm_get_rate_id(void *dm_void, u8 sta_idx)
 		}
 	} else if (wrls_mode == (WIRELESS_OFDM | WIRELESS_VHT)) {
 	/*@AC mode*/
-		if (bw == CHANNEL_WIDTH_160) {
-			if (tx_stream_num == 1)
-				rate_id_idx = PHYDM_ARFR1_AC_1SS;
-			else if (tx_stream_num == 2)
-				rate_id_idx = PHYDM_ARFR0_AC_2SS;
-			else if (tx_stream_num == 3)
-				rate_id_idx = PHYDM_ARFR0_AC_2SS;
-			else if (tx_stream_num == 4)
-				rate_id_idx = PHYDM_ARFR0_AC_2SS;
-		} else {
-			if (tx_stream_num == 1)
-				rate_id_idx = PHYDM_ARFR1_AC_1SS;
-			else if (tx_stream_num == 2)
-				rate_id_idx = PHYDM_ARFR0_AC_2SS;
-			else if (tx_stream_num == 3)
-				rate_id_idx = PHYDM_ARFR4_AC_3SS;
-			else if (tx_stream_num == 4)
-				rate_id_idx = PHYDM_ARFR6_AC_4SS;
-			}
+		if (tx_stream_num == 1)
+			rate_id_idx = PHYDM_ARFR1_AC_1SS;
+		else if (tx_stream_num == 2)
+			rate_id_idx = PHYDM_ARFR0_AC_2SS;
+		else if (tx_stream_num == 3)
+			rate_id_idx = PHYDM_ARFR4_AC_3SS;
+		else if (tx_stream_num == 4)
+			rate_id_idx = PHYDM_ARFR6_AC_4SS;
 	} else if (wrls_mode == (WIRELESS_CCK | WIRELESS_OFDM | WIRELESS_VHT)) {
 	/*@AC 2.4G mode*/
 		if (bw >= CHANNEL_WIDTH_80) {
@@ -1377,8 +1366,7 @@ void phydm_ra_mask_watchdog(void *dm_void)
 
 		rssi_lv_new = phydm_rssi_lv_dec(dm, (u32)rssi, ra->rssi_level);
 
-		if (ra->rssi_level != rssi_lv_new ||
-		    (force_ra_mask_en && dm->number_linked_client < 10)) {
+		if (ra->rssi_level != rssi_lv_new || force_ra_mask_en) {
 			PHYDM_DBG(dm, DBG_RA_MASK, "RSSI LV:((%d))->((%d))\n",
 				  ra->rssi_level, rssi_lv_new);
 
@@ -1586,7 +1574,7 @@ u8 phydm_rssi_lv_dec(void *dm_void, u32 rssi, u8 ratr_state)
 
 enum phydm_qam_order phydm_get_ofdm_qam_order(void *dm_void, u8 rate_idx)
 {
-	u8 tmp_idx = rate_idx;
+	u8 tmp_idx = 0;
 	enum phydm_qam_order qam_order = PHYDM_QAM_BPSK;
 	enum phydm_qam_order qam[10] = {PHYDM_QAM_BPSK, PHYDM_QAM_QPSK,
 					PHYDM_QAM_QPSK, PHYDM_QAM_16QAM,

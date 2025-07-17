@@ -26,21 +26,12 @@
 #ifndef __PHYDM_API_H__
 #define __PHYDM_API_H__
 
-/* 2019.03.05 add reset txagc API for jgr3 ics*/
-#define PHYDM_API_VERSION "2.1"
+#define PHYDM_API_VERSION "1.0" /* @2017.07.10  Dino, Add phydm_api.h*/
 
 /* @1 ============================================================
  * 1  Definition
  * 1 ============================================================
  */
-#define N_IC_TX_OFFEST_5_BIT (ODM_RTL8188E | ODM_RTL8192E)
-
-#define N_IC_TX_OFFEST_6_BIT (ODM_RTL8723D | ODM_RTL8197F | ODM_RTL8710B |\
-			ODM_RTL8723B | ODM_RTL8703B | ODM_RTL8195A |\
-			ODM_RTL8188F)
-
-#define N_IC_TX_OFFEST_7_BIT (ODM_RTL8721D | ODM_RTL8710C)
-
 #define CN_CNT_MAX 10 /*@max condition number threshold*/
 
 #define FUNC_ENABLE 1
@@ -109,7 +100,7 @@ void phydm_ant_weight_dbg(void *dm_void, char input[][16], u32 *_used,
 
 void phydm_trx_antenna_setting_init(void *dm_void, u8 num_rf_path);
 
-void phydm_config_ofdm_rx_path(void *dm_void, enum bb_path path);
+void phydm_config_ofdm_rx_path(void *dm_void, u32 path);
 
 void phydm_config_cck_rx_path(void *dm_void, enum bb_path path);
 
@@ -117,10 +108,6 @@ void phydm_config_cck_rx_antenna_init(void *dm_void);
 
 void phydm_config_trx_path(void *dm_void, char input[][16], u32 *_used,
 			   char *output, u32 *_out_len);
-
-void phydm_config_ofdm_tx_path(void *dm_void, enum bb_path path);
-
-void phydm_config_cck_tx_path(void *dm_void, enum bb_path path);
 
 void phydm_tx_2path(void *dm_void);
 
@@ -172,8 +159,6 @@ void phydm_user_position_for_sniffer(void *dm_void, u8 user_position);
 #endif
 
 #ifdef PHYDM_COMMON_API_SUPPORT
-void phydm_reset_txagc(void *dm_void);
-
 boolean
 phydm_api_shift_txagc(void *dm_void, u32 pwr_offset, enum rf_path path,
 		      boolean is_positive);

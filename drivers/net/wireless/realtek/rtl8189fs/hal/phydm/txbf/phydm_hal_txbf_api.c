@@ -394,67 +394,6 @@ void phydm_txbf_rfmode(void *dm_void, u8 su_bfee_cnt, u8 mu_bfee_cnt)
 		}
 	}
 #endif
-#if (RTL8197G_SUPPORT)
-	if (dm->support_ic_type == ODM_RTL8197G) {
-		if (su_bfee_cnt > 0 || mu_bfee_cnt > 0) {
-			/*Path A ==================*/
-			/*RF mode table write enable*/
-			odm_set_rf_reg(dm, RF_PATH_A, RF_0xef, BIT(19), 0x1);
-			/*Set RF Rx mode table*/
-			odm_set_rf_reg(dm, RF_PATH_A, RF_0x30, 0xfffff,
-				       0x18000);
-			odm_set_rf_reg(dm, RF_PATH_A, RF_0x31, 0xfffff,
-				       0x000cf);
-			odm_set_rf_reg(dm, RF_PATH_A, RF_0x32, 0xfffff,
-				       0x71fc2);
-			/*RF mode table write disable*/
-			odm_set_rf_reg(dm, RF_PATH_A, RF_0xef, BIT(19), 0x0);
-
-			/*Path B ==================*/
-			/*RF mode table write enable*/
-			odm_set_rf_reg(dm, RF_PATH_B, RF_0xef, BIT(19), 0x1);
-			/*Set RF Rx mode table*/
-			odm_set_rf_reg(dm, RF_PATH_B, RF_0x30, 0xfffff,
-				       0x18000);
-			odm_set_rf_reg(dm, RF_PATH_B, RF_0x31, 0xfffff,
-				       0x000cf);
-			odm_set_rf_reg(dm, RF_PATH_B, RF_0x32, 0xfffff,
-				       0x71fc2);
-			/*Set RF Standby mode table*/
-			odm_set_rf_reg(dm, RF_PATH_B, RF_0x30, 0xfffff,
-				       0x18000);
-			odm_set_rf_reg(dm, RF_PATH_B, RF_0x31, 0xfffff,
-				       0x000ef);
-			odm_set_rf_reg(dm, RF_PATH_B, RF_0x32, 0xfffff,
-				       0x01042);
-			/*RF mode table write disable*/
-			odm_set_rf_reg(dm, RF_PATH_B, RF_0xef, BIT(19), 0x0);
-		}
-
-		/*@if Nsts > Nc, don't apply V matrix*/
-		odm_set_bb_reg(dm, R_0x1e24, BIT(11), 1);
-
-		if (su_bfee_cnt > 0 || mu_bfee_cnt > 0) {
-			/*@enable BB TxBF ant mapping register*/
-			odm_set_bb_reg(dm, R_0x1e24, BIT(28) | BIT29, 0x2);
-			odm_set_bb_reg(dm, R_0x1e24, BIT(30), 1);
-
-			/* logic mapping */
-			/* TX BF logic map and TX path en for Nsts = 1~2 */
-			odm_set_bb_reg(dm, R_0x820, 0xff, 0x33);
-			odm_set_bb_reg(dm, R_0x1e2c, 0xffff, 0x404);
-			odm_set_bb_reg(dm, R_0x820, 0xffff0000, 0x33);
-			odm_set_bb_reg(dm, R_0x1e30, 0xffff, 0x404);
-		} else {
-			/*@Disable BB TxBF ant mapping register*/
-			odm_set_bb_reg(dm, R_0x1e24, BIT(28) | BIT29, 0x0);
-			odm_set_bb_reg(dm, R_0x1e24, BIT(31), 0);
-			/*@1SS~2ss A, AB*/
-			odm_set_bb_reg(dm, R_0x820, 0xff, 0x31);
-			odm_set_bb_reg(dm, R_0x1e2c, 0xffff, 0x400);
-		}
-	}
-#endif
 }
 
 void phydm_mu_rsoml_reset(void *dm_void)

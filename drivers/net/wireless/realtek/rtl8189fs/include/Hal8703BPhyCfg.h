@@ -91,6 +91,16 @@ PHY_SetTxPowerIndex_8703B(
 		u8					Rate
 );
 
+u8
+PHY_GetTxPowerIndex_8703B(
+		PADAPTER			pAdapter,
+		enum rf_path			RFPath,
+		u8					Rate,
+		u8					BandWidth,
+		u8					Channel,
+	struct txpwr_idx_comp *tic
+);
+
 void
 PHY_SetTxPowerLevel8703B(
 		PADAPTER		Adapter,

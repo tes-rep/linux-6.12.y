@@ -195,10 +195,8 @@ u8 rtw_mi_buddy_is_scan_deny(_adapter *adapter);
 void rtw_mi_beacon_update(_adapter *padapter);
 void rtw_mi_buddy_beacon_update(_adapter *padapter);
 
-#ifndef CONFIG_MI_WITH_MBSSID_CAM
-void rtw_mi_hal_dump_macaddr(void *sel, _adapter *padapter);
-void rtw_mi_buddy_hal_dump_macaddr(void *sel, _adapter *padapter);
-#endif
+void rtw_mi_hal_dump_macaddr(_adapter *padapter);
+void rtw_mi_buddy_hal_dump_macaddr(_adapter *padapter);
 
 #ifdef CONFIG_PCI_HCI
 void rtw_mi_xmit_tasklet_schedule(_adapter *padapter);
@@ -275,9 +273,6 @@ extern void sreset_start_adapter(_adapter *padapter);
 extern void sreset_stop_adapter(_adapter *padapter);
 u8 rtw_mi_sreset_adapter_hdl(_adapter *padapter, u8 bstart);
 u8 rtw_mi_buddy_sreset_adapter_hdl(_adapter *padapter, u8 bstart);
-#if defined(DBG_CONFIG_ERROR_RESET) && defined(CONFIG_CONCURRENT_MODE)
-void rtw_mi_ap_info_restore(_adapter *adapter);
-#endif
 
 u8 rtw_mi_tx_beacon_hdl(_adapter *padapter);
 u8 rtw_mi_buddy_tx_beacon_hdl(_adapter *padapter);

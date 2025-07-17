@@ -635,7 +635,7 @@ void phydm_dfs_parameter_init(void *dm_void)
 
 	/*@for dynamic dfs*/
 	dfs->pwdb_th = 8;
-	dfs->fa_mask_th = 30 * (dfs->dfs_polling_time / 100);
+	dfs->fa_mask_th = 30;
 	dfs->st_l2h_min = 0x20;
 	dfs->st_l2h_max = 0x4e;
 	dfs->pwdb_scalar_factor = 12;
@@ -2386,14 +2386,14 @@ void phydm_dfs_debug(void *dm_void, char input[][16], u32 *_used,
 u8 phydm_dfs_polling_time(void *dm_void)
 {
 	struct dm_struct *dm = (struct dm_struct *)dm_void;
-	struct _DFS_STATISTICS *dfs = &dm->dfs;
+	u8 dfs_polling_time = 0;
 
 	if (dm->support_ic_type & (ODM_RTL8814A | ODM_RTL8822B | ODM_RTL8821C))
-		dfs->dfs_polling_time = 40;
+		dfs_polling_time = 40;
 	else
-		dfs->dfs_polling_time = 100;
+		dfs_polling_time = 100;
 
-	return dfs->dfs_polling_time;
+	return dfs_polling_time;
 }
 
 #endif /* @defined(CONFIG_PHYDM_DFS_MASTER) */

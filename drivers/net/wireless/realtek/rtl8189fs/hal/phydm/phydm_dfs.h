@@ -76,7 +76,6 @@ struct _DFS_STATISTICS {
 	boolean		det_print;
 	boolean		det_print2;
 	boolean		radar_type;
-	u8		dfs_polling_time;
 	/*@dfs histogram*/
 	boolean		print_hist_rpt;
 	boolean		hist_cond_on;

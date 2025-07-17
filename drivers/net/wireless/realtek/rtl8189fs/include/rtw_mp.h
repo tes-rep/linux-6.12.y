@@ -384,7 +384,6 @@ struct mp_priv {
 	BOOLEAN mplink_brx;
 	BOOLEAN mplink_btx;
 
-	bool tssitrk_on;
 };
 
 typedef struct _IOCMD_STRUCT_ {
@@ -645,16 +644,6 @@ typedef enum	_MPT_TXPWR_DEF {
 #define IS_MPT_VHT_RATE(_rate)			(_rate >= MPT_RATE_VHT1SS_MCS0 && _rate <= MPT_RATE_VHT4SS_MCS9)
 #define IS_MPT_CCK_RATE(_rate)			(_rate >= MPT_RATE_1M && _rate <= MPT_RATE_11M)
 #define IS_MPT_OFDM_RATE(_rate)			(_rate >= MPT_RATE_6M && _rate <= MPT_RATE_54M)
-
-typedef enum _mp_tx_pkt_payload{
-	MP_TX_Payload_00 = 0,
-	MP_TX_Payload_a5,
-	MP_TX_Payload_5a,
-	MP_TX_Payload_ff,
-	MP_TX_Payload_prbs9,
-	MP_TX_Payload_default_random
-} mp_tx_pkt_payload;
-
 /*************************************************************************/
 #if 0
 extern struct mp_xmit_frame *alloc_mp_xmitframe(struct mp_priv *pmp_priv);
@@ -706,7 +695,7 @@ void	rtw_mp_trigger_iqk(PADAPTER padapter);
 void	rtw_mp_trigger_lck(PADAPTER padapter);
 void	rtw_mp_trigger_dpk(PADAPTER padapter);
 u8 rtw_mp_mode_check(PADAPTER padapter);
-bool rtw_is_mp_tssitrk_on(_adapter *adapter);
+
 
 void hal_mpt_SwitchRfSetting(PADAPTER pAdapter);
 s32 hal_mpt_SetPowerTracking(PADAPTER padapter, u8 enable);
@@ -735,7 +724,6 @@ u8 mpt_to_mgnt_rate(u32	MptRateIdx);
 u8 rtw_mpRateParseFunc(PADAPTER pAdapter, u8 *targetStr);
 u32 mp_join(PADAPTER padapter, u8 mode);
 u32 hal_mpt_query_phytxok(PADAPTER	pAdapter);
-u32 mpt_get_tx_power_finalabs_val(PADAPTER	padapter, u8 rf_path);
 
 void
 PMAC_Get_Pkt_Param(

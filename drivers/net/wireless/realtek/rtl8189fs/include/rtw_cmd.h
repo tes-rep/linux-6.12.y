@@ -20,7 +20,7 @@
 
 #define FREE_CMDOBJ_SZ	128
 
-#define MAX_CMDSZ	1024
+#define MAX_CMDSZ	1536
 #define MAX_RSPSZ	512
 #define MAX_EVTSZ	1024
 
@@ -254,7 +254,6 @@ enum rtw_drvextra_cmd_id {
 #ifdef CONFIG_CTRL_TXSS_BY_TP
 	TXSS_WK_CID,
 #endif
-	AC_PARM_CMD_WK_CID,
 #ifdef CONFIG_AP_MODE
 	STOP_AP_WK_CID,
 #endif
@@ -1076,7 +1075,7 @@ u8 rtw_dm_ra_mask_wk_cmd(_adapter *padapter, u8 *psta);
 
 extern u8 rtw_ps_cmd(_adapter *padapter);
 
-#if CONFIG_DFS
+#ifdef CONFIG_DFS
 void rtw_dfs_ch_switch_hdl(struct dvobj_priv *dvobj);
 #endif
 
@@ -1141,8 +1140,6 @@ u8 rtw_ssmps_wk_cmd(_adapter *adapter, struct sta_info *sta, u8 smps, u8 enqueue
 u8 session_tracker_chk_cmd(_adapter *adapter, struct sta_info *sta);
 u8 session_tracker_add_cmd(_adapter *adapter, struct sta_info *sta, u8 *local_naddr, u8 *local_port, u8 *remote_naddr, u8 *remote_port);
 u8 session_tracker_del_cmd(_adapter *adapter, struct sta_info *sta, u8 *local_naddr, u8 *local_port, u8 *remote_naddr, u8 *remote_port);
-
-u8 set_txq_params_cmd(_adapter *adapter, u32 ac_parm, u8 ac_type);
 
 #if defined(CONFIG_RTW_MESH) && defined(RTW_PER_CMD_SUPPORT_FW)
 u8 rtw_req_per_cmd(_adapter * adapter);

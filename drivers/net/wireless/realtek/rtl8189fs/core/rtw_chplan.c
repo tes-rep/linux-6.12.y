@@ -157,13 +157,13 @@ struct ch_list_t {
 
 struct chplan_ent_t {
 	u8 rd_2g;
-#if CONFIG_IEEE80211_BAND_5GHZ
+#ifdef CONFIG_IEEE80211_BAND_5GHZ
 	u8 rd_5g;
 #endif
 	u8 regd; /* value of REGULATION_TXPWR_LMT */
 };
 
-#if CONFIG_IEEE80211_BAND_5GHZ
+#ifdef CONFIG_IEEE80211_BAND_5GHZ
 #define CHPLAN_ENT(i2g, i5g, regd) {i2g, i5g, regd}
 #else
 #define CHPLAN_ENT(i2g, i5g, regd) {i2g, regd}
@@ -185,7 +185,7 @@ static struct ch_list_t RTW_ChannelPlan2G[] = {
 	/* 12, RTW_RD_2G_IC2 */		CH_LIST_ENT(11, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11),
 };
 
-#if CONFIG_IEEE80211_BAND_5GHZ
+#ifdef CONFIG_IEEE80211_BAND_5GHZ
 static struct ch_list_t RTW_ChannelPlan5G[] = {
 	/* 0, RTW_RD_5G_NULL */		CH_LIST_ENT(0),
 	/* 1, RTW_RD_5G_ETSI1 */		CH_LIST_ENT(19, 36, 40, 44, 48, 52, 56, 60, 64, 100, 104, 108, 112, 116, 120, 124, 128, 132, 136, 140),
@@ -417,7 +417,7 @@ bool rtw_chplan_is_empty(u8 id)
 		chplan_map = &RTW_ChannelPlanMap[id];
 
 	if (chplan_map->rd_2g == RTW_RD_2G_NULL
-		#if CONFIG_IEEE80211_BAND_5GHZ
+		#ifdef CONFIG_IEEE80211_BAND_5GHZ
 		&& chplan_map->rd_5g == RTW_RD_5G_NULL
 		#endif
 	)
@@ -554,7 +554,7 @@ u8 init_channel_set(_adapter *padapter, u8 ChannelPlan, RT_CHANNEL_INFO *channel
 		}
 	}
 
-#if CONFIG_IEEE80211_BAND_5GHZ
+#ifdef CONFIG_IEEE80211_BAND_5GHZ
 	if (b5GBand) {
 		if (ChannelPlan == RTW_CHPLAN_REALTEK_DEFINE)
 			rd_5g = RTW_CHANNEL_PLAN_MAP_REALTEK_DEFINE.rd_5g;
@@ -564,7 +564,7 @@ u8 init_channel_set(_adapter *padapter, u8 ChannelPlan, RT_CHANNEL_INFO *channel
 		for (index = 0; index < CH_LIST_LEN(RTW_ChannelPlan5G[rd_5g]); index++) {
 			if (rtw_regsty_is_excl_chs(regsty, CH_LIST_CH(RTW_ChannelPlan5G[rd_5g], index)) == _TRUE)
 				continue;
-			#if !CONFIG_DFS
+			#ifndef CONFIG_DFS
 			if (rtw_is_dfs_ch(CH_LIST_CH(RTW_ChannelPlan5G[rd_5g], index)))
 				continue;
 			#endif
@@ -1224,7 +1224,7 @@ void dump_chplan_test(void *sel)
 		}
 	}
 
-#if CONFIG_IEEE80211_BAND_5GHZ
+#ifdef CONFIG_IEEE80211_BAND_5GHZ
 	for (i = 0; i < RTW_RD_5G_MAX; i++) {
 		for (j = 0; j < CH_LIST_LEN(RTW_ChannelPlan5G[i]); j++) {
 			if (rtw_ch2freq(CH_LIST_CH(RTW_ChannelPlan5G[i], j)) == 0)

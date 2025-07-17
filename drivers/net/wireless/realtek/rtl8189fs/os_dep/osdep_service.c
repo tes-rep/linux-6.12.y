@@ -444,6 +444,9 @@ void rtw_mstat_dump(void *sel)
 	int value_f[4][mstat_ff_idx(MSTAT_FUNC_MAX)];
 #endif
 
+	int vir_alloc, vir_peak, vir_alloc_err, phy_alloc, phy_peak, phy_alloc_err;
+	int tx_alloc, tx_peak, tx_alloc_err, rx_alloc, rx_peak, rx_alloc_err;
+
 	for (i = 0; i < mstat_tf_idx(MSTAT_TYPE_MAX); i++) {
 		value_t[0][i] = ATOMIC_READ(&(rtw_mem_type_stat[i].alloc));
 		value_t[1][i] = ATOMIC_READ(&(rtw_mem_type_stat[i].peak));
@@ -1626,7 +1629,8 @@ void rtw_sleep_schedulable(int ms)
 		delta = 1;/* 1 ms */
 	}
 	set_current_state(TASK_INTERRUPTIBLE);
-        schedule_timeout(delta);
+	if (schedule_timeout(delta) != 0)
+		return ;
 	return;
 
 #endif
@@ -2166,21 +2170,11 @@ static int writeFile(struct file *fp, char *buf, int len)
 {
 	int wlen = 0, sum = 0;
 
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 1, 0))
-	if (!(fp->f_mode & FMODE_CAN_WRITE))
-#else
 	if (!fp->f_op || !fp->f_op->write)
-#endif
 		return -EPERM;
 
 	while (sum < len) {
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 14, 0))
-		wlen = kernel_write(fp, buf + sum, len - sum, &fp->f_pos);
-#elif (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 1, 0))
-		wlen = __vfs_write(fp, buf + sum, len - sum, &fp->f_pos);
-#else
 		wlen = fp->f_op->write(fp, buf + sum, len - sum, &fp->f_pos);
-#endif
 		if (wlen > 0)
 			sum += wlen;
 		else if (0 != wlen)
@@ -2191,20 +2185,6 @@ static int writeFile(struct file *fp, char *buf, int len)
 
 	return sum;
 
-}
-
-/*
-* Test if the specifi @param pathname is a direct and readable
-* If readable, @param sz is not used
-* @param pathname the name of the path to test
-* @return Linux specific error code
-*/
-static int isDirReadable(const char *pathname, u32 *sz)
-{
-	struct path path;
-	int error = 0;
-
-	return kern_path(pathname, LOOKUP_FOLLOW, &path);
 }
 
 /*
@@ -2245,7 +2225,6 @@ static int isFileReadable(const char *path, u32 *sz)
 			*sz = i_size_read(fp->f_dentry->d_inode);
 			#endif
 		}
-
 #ifdef get_fs
 		set_fs(oldfs);
 #endif
@@ -2344,24 +2323,6 @@ static int storeToFile(const char *path, u8 *buf, u32 sz)
 	return ret;
 }
 #endif /* PLATFORM_LINUX */
-
-/*
-* Test if the specifi @param path is a direct and readable
-* @param path the path of the direct to test
-* @return _TRUE or _FALSE
-*/
-int rtw_is_dir_readable(const char *path)
-{
-#ifdef PLATFORM_LINUX
-	if (isDirReadable(path, NULL) == 0)
-		return _TRUE;
-	else
-		return _FALSE;
-#else
-	/* Todo... */
-	return _FALSE;
-#endif
-}
 
 /*
 * Test if the specifi @param path is a file and readable

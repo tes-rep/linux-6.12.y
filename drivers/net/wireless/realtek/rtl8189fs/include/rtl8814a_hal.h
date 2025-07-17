@@ -274,6 +274,8 @@ void hal_ReadPAType_8814A(
 		u8		*pLNAType
 );
 
+void hal_ReadPowerTrackingType_8814A(PADAPTER Adapter, u8 *PROMContent, BOOLEAN AutoloadFail);
+
 void hal_GetRxGainOffset_8814A(
 	PADAPTER	Adapter,
 	u8 			*PROMContent,

@@ -245,11 +245,13 @@ int rtw_dev_get_feature_set(struct net_device *dev)
 {
 	_adapter *adapter = (_adapter *)rtw_netdev_priv(dev);
 	HAL_DATA_TYPE *HalData = GET_HAL_DATA(adapter);
+	HAL_VERSION *hal_ver = &HalData->version_id;
+
 	int feature_set = 0;
 
 	feature_set |= WIFI_FEATURE_INFRA;
 
-#if CONFIG_IEEE80211_BAND_5GHZ
+#ifdef CONFIG_IEEE80211_BAND_5GHZ
 	if (is_supported_5g(adapter_to_regsty(adapter)->wireless_mode))
 		feature_set |= WIFI_FEATURE_INFRA_5G;
 #endif
@@ -1746,10 +1748,7 @@ static const struct wiphy_vendor_command rtw_vendor_cmds[] = {
 			.subcmd = GSCAN_SUBCMD_GET_CAPABILITIES
 		},
 		.flags = WIPHY_VENDOR_CMD_NEED_WDEV | WIPHY_VENDOR_CMD_NEED_NETDEV,
-		.doit = rtw_cfgvendor_gscan_get_capabilities,
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(5, 3, 0))
-		.policy = VENDOR_CMD_RAW_DATA,
-#endif
+		.doit = rtw_cfgvendor_gscan_get_capabilities
 	},
 	{
 		{
@@ -1757,10 +1756,7 @@ static const struct wiphy_vendor_command rtw_vendor_cmds[] = {
 			.subcmd = GSCAN_SUBCMD_SET_CONFIG
 		},
 		.flags = WIPHY_VENDOR_CMD_NEED_WDEV | WIPHY_VENDOR_CMD_NEED_NETDEV,
-		.doit = rtw_cfgvendor_set_scan_cfg,
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(5, 3, 0))
-		.policy = VENDOR_CMD_RAW_DATA,
-#endif
+		.doit = rtw_cfgvendor_set_scan_cfg
 	},
 	{
 		{
@@ -1768,10 +1764,7 @@ static const struct wiphy_vendor_command rtw_vendor_cmds[] = {
 			.subcmd = GSCAN_SUBCMD_SET_SCAN_CONFIG
 		},
 		.flags = WIPHY_VENDOR_CMD_NEED_WDEV | WIPHY_VENDOR_CMD_NEED_NETDEV,
-		.doit = rtw_cfgvendor_set_batch_scan_cfg,
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(5, 3, 0))
-		.policy = VENDOR_CMD_RAW_DATA,
-#endif
+		.doit = rtw_cfgvendor_set_batch_scan_cfg
 	},
 	{
 		{
@@ -1779,10 +1772,7 @@ static const struct wiphy_vendor_command rtw_vendor_cmds[] = {
 			.subcmd = GSCAN_SUBCMD_ENABLE_GSCAN
 		},
 		.flags = WIPHY_VENDOR_CMD_NEED_WDEV | WIPHY_VENDOR_CMD_NEED_NETDEV,
-		.doit = rtw_cfgvendor_initiate_gscan,
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(5, 3, 0))
-		.policy = VENDOR_CMD_RAW_DATA,
-#endif
+		.doit = rtw_cfgvendor_initiate_gscan
 	},
 	{
 		{
@@ -1790,10 +1780,7 @@ static const struct wiphy_vendor_command rtw_vendor_cmds[] = {
 			.subcmd = GSCAN_SUBCMD_ENABLE_FULL_SCAN_RESULTS
 		},
 		.flags = WIPHY_VENDOR_CMD_NEED_WDEV | WIPHY_VENDOR_CMD_NEED_NETDEV,
-		.doit = rtw_cfgvendor_enable_full_scan_result,
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(5, 3, 0))
-		.policy = VENDOR_CMD_RAW_DATA,
-#endif
+		.doit = rtw_cfgvendor_enable_full_scan_result
 	},
 	{
 		{
@@ -1801,10 +1788,7 @@ static const struct wiphy_vendor_command rtw_vendor_cmds[] = {
 			.subcmd = GSCAN_SUBCMD_SET_HOTLIST
 		},
 		.flags = WIPHY_VENDOR_CMD_NEED_WDEV | WIPHY_VENDOR_CMD_NEED_NETDEV,
-		.doit = rtw_cfgvendor_hotlist_cfg,
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(5, 3, 0))
-		.policy = VENDOR_CMD_RAW_DATA,
-#endif
+		.doit = rtw_cfgvendor_hotlist_cfg
 	},
 	{
 		{
@@ -1812,10 +1796,7 @@ static const struct wiphy_vendor_command rtw_vendor_cmds[] = {
 			.subcmd = GSCAN_SUBCMD_SET_SIGNIFICANT_CHANGE_CONFIG
 		},
 		.flags = WIPHY_VENDOR_CMD_NEED_WDEV | WIPHY_VENDOR_CMD_NEED_NETDEV,
-		.doit = rtw_cfgvendor_significant_change_cfg,
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(5, 3, 0))
-		.policy = VENDOR_CMD_RAW_DATA,
-#endif
+		.doit = rtw_cfgvendor_significant_change_cfg
 	},
 	{
 		{
@@ -1823,10 +1804,7 @@ static const struct wiphy_vendor_command rtw_vendor_cmds[] = {
 			.subcmd = GSCAN_SUBCMD_GET_SCAN_RESULTS
 		},
 		.flags = WIPHY_VENDOR_CMD_NEED_WDEV | WIPHY_VENDOR_CMD_NEED_NETDEV,
-		.doit = rtw_cfgvendor_gscan_get_batch_results,
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(5, 3, 0))
-		.policy = VENDOR_CMD_RAW_DATA,
-#endif
+		.doit = rtw_cfgvendor_gscan_get_batch_results
 	},
 	{
 		{
@@ -1834,10 +1812,7 @@ static const struct wiphy_vendor_command rtw_vendor_cmds[] = {
 			.subcmd = GSCAN_SUBCMD_GET_CHANNEL_LIST
 		},
 		.flags = WIPHY_VENDOR_CMD_NEED_WDEV | WIPHY_VENDOR_CMD_NEED_NETDEV,
-		.doit = rtw_cfgvendor_gscan_get_channel_list,
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(5, 3, 0))
-		.policy = VENDOR_CMD_RAW_DATA,
-#endif
+		.doit = rtw_cfgvendor_gscan_get_channel_list
 	},
 #endif /* GSCAN_SUPPORT */
 #if defined(RTT_SUPPORT) && 0
@@ -1847,10 +1822,7 @@ static const struct wiphy_vendor_command rtw_vendor_cmds[] = {
 			.subcmd = RTT_SUBCMD_SET_CONFIG
 		},
 		.flags = WIPHY_VENDOR_CMD_NEED_WDEV | WIPHY_VENDOR_CMD_NEED_NETDEV,
-		.doit = rtw_cfgvendor_rtt_set_config,
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(5, 3, 0))
-		.policy = VENDOR_CMD_RAW_DATA,
-#endif
+		.doit = rtw_cfgvendor_rtt_set_config
 	},
 	{
 		{
@@ -1858,10 +1830,7 @@ static const struct wiphy_vendor_command rtw_vendor_cmds[] = {
 			.subcmd = RTT_SUBCMD_CANCEL_CONFIG
 		},
 		.flags = WIPHY_VENDOR_CMD_NEED_WDEV | WIPHY_VENDOR_CMD_NEED_NETDEV,
-		.doit = rtw_cfgvendor_rtt_cancel_config,
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(5, 3, 0))
-		.policy = VENDOR_CMD_RAW_DATA,
-#endif
+		.doit = rtw_cfgvendor_rtt_cancel_config
 	},
 	{
 		{
@@ -1869,10 +1838,7 @@ static const struct wiphy_vendor_command rtw_vendor_cmds[] = {
 			.subcmd = RTT_SUBCMD_GETCAPABILITY
 		},
 		.flags = WIPHY_VENDOR_CMD_NEED_WDEV | WIPHY_VENDOR_CMD_NEED_NETDEV,
-		.doit = rtw_cfgvendor_rtt_get_capability,
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(5, 3, 0))
-		.policy = VENDOR_CMD_RAW_DATA,
-#endif
+		.doit = rtw_cfgvendor_rtt_get_capability
 	},
 #endif /* RTT_SUPPORT */
 #ifdef CONFIG_RTW_CFGVEDNOR_LLSTATS
@@ -1919,7 +1885,7 @@ static const struct wiphy_vendor_command rtw_vendor_cmds[] = {
                 .flags = WIPHY_VENDOR_CMD_NEED_WDEV | WIPHY_VENDOR_CMD_NEED_NETDEV,
                 .doit = rtw_cfgvendor_set_rssi_monitor,
 #if (LINUX_VERSION_CODE >= KERNEL_VERSION(5, 3, 0))
-                .policy = VENDOR_CMD_RAW_DATA,
+				.policy = VENDOR_CMD_RAW_DATA,
 #endif
         },
 #endif /* CONFIG_RTW_CFGVEDNOR_RSSIMONITOR */
@@ -2048,7 +2014,6 @@ static const struct wiphy_vendor_command rtw_vendor_cmds[] = {
 #if (LINUX_VERSION_CODE >= KERNEL_VERSION(5, 3, 0))
 		.policy = VENDOR_CMD_RAW_DATA,
 #endif
-
 	},
 	{
 		{

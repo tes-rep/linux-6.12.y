@@ -38,6 +38,10 @@
 #define	__odm_func__
 #define	__odm_func_aon__
 
+/*Deifne HW endian support*/
+#define	ODM_ENDIAN_BIG	0
+#define	ODM_ENDIAN_LITTLE	1
+
 #if (DM_ODM_SUPPORT_TYPE == ODM_WIN)
 	#define GET_PDM_ODM(__padapter)	((struct dm_struct*)(&(GET_HAL_DATA(__padapter))->DM_OutSrc))
 #elif (DM_ODM_SUPPORT_TYPE == ODM_CE)
@@ -183,6 +187,14 @@ enum rt_spinlock_type {
 
 	#define DEV_BUS_TYPE	RT_PCI_INTERFACE
 
+	#if defined(__LITTLE_ENDIAN)
+		#define	ODM_ENDIAN_TYPE			ODM_ENDIAN_LITTLE
+	#elif defined(__BIG_ENDIAN)
+		#define	ODM_ENDIAN_TYPE			ODM_ENDIAN_BIG
+	#else
+		#error
+	#endif
+
 	/* define useless flag to avoid compile warning */
 	#define	USE_WORKITEM 0
 	#define	FOR_BRAZIL_PRETEST 0
@@ -210,6 +222,13 @@ enum rt_spinlock_type {
 		#define DEV_BUS_TYPE	RT_SDIO_INTERFACE
 	#elif defined(CONFIG_GSPI_HCI)
 		#define DEV_BUS_TYPE	RT_SDIO_INTERFACE
+	#endif
+
+
+	#if defined(CONFIG_LITTLE_ENDIAN)
+		#define	ODM_ENDIAN_TYPE			ODM_ENDIAN_LITTLE
+	#elif defined(CONFIG_BIG_ENDIAN)
+		#define	ODM_ENDIAN_TYPE			ODM_ENDIAN_BIG
 	#endif
 
 	#define	boolean	bool

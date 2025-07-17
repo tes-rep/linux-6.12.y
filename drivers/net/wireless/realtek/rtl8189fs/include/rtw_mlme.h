@@ -526,20 +526,6 @@ enum {
 	RTW_ROAM_ACTIVE = BIT2,
 };
 
-struct beacon_keys {
-	u8 ssid[IW_ESSID_MAX_SIZE];
-	u32 ssid_len;
-	u8 ch;
-	u8 bw;
-	u8 offset;
-	u8 proto_cap; /* PROTO_CAP_XXX */
-	u8 rate_set[12];
-	u8 rate_num;
-	int encryp_protocol;
-	int pairwise_cipher;
-	int group_cipher;
-	u32 akm;
-};
 #ifdef CONFIG_RTW_80211R
 #define RTW_FT_ACTION_REQ_LMT	4
 #define RTW_FT_MAX_IE_SZ	256
@@ -1173,9 +1159,6 @@ void rtw_scan_abort_no_wait(_adapter *adapter);
 void rtw_scan_abort(_adapter *adapter);
 u32 rtw_join_abort_timeout(_adapter *adapter, u32 timeout_ms);
 
-int rtw_cached_pmkid(_adapter *Adapter, u8 *bssid);
-int rtw_rsn_sync_pmkid(_adapter *adapter, u8 *ie, uint ie_len, int i_ent);
-
 extern int rtw_restruct_sec_ie(_adapter *adapter, u8 *out_ie);
 #ifdef CONFIG_WMMPS_STA
 void rtw_uapsd_use_default_setting(_adapter *padapter);
@@ -1369,8 +1352,6 @@ void dump_arp_pkt(void *sel, u8 *da, u8 *sa, u8 *arp, bool tx);
 
 #define GET_UDP_SRC(_udphdr)			BE_BITS_TO_2BYTE(((u8 *)(_udphdr)) + 0, 0, 16)
 #define GET_UDP_DST(_udphdr)			BE_BITS_TO_2BYTE(((u8 *)(_udphdr)) + 2, 0, 16)
-#define GET_UDP_SIG1(_udphdr)			BE_BITS_TO_1BYTE(((u8 *)(_udphdr)) + 8, 0, 8)
-#define GET_UDP_SIG2(_udphdr)			BE_BITS_TO_1BYTE(((u8 *)(_udphdr)) + 23, 0, 8)
 
 #define TCP_SRC(_tcphdr)				(((u8 *)(_tcphdr)) + 0)
 #define TCP_DST(_tcphdr)				(((u8 *)(_tcphdr)) + 2)

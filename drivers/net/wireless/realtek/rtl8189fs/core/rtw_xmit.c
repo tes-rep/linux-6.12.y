@@ -462,14 +462,14 @@ u8 rtw_get_tx_bw_mode(_adapter *adapter, struct sta_info *sta)
 	return bw;
 }
 
-void rtw_get_adapter_tx_rate_bmp_by_bw(_adapter *adapter, u8 bw, u16 *r_bmp_cck_ofdm, u32 *r_bmp_ht, u64 *r_bmp_vht)
+void rtw_get_adapter_tx_rate_bmp_by_bw(_adapter *adapter, u8 bw, u16 *r_bmp_cck_ofdm, u32 *r_bmp_ht, u32 *r_bmp_vht)
 {
 	struct dvobj_priv *dvobj = adapter_to_dvobj(adapter);
 	struct macid_ctl_t *macid_ctl = dvobj_to_macidctl(dvobj);
 	u8 fix_bw = 0xFF;
 	u16 bmp_cck_ofdm = 0;
 	u32 bmp_ht = 0;
-	u64 bmp_vht = 0;
+	u32 bmp_vht = 0;
 	int i;
 
 	if (adapter->fix_rate != 0xFF && adapter->fix_bw != 0xFF)
@@ -506,12 +506,12 @@ void rtw_get_adapter_tx_rate_bmp_by_bw(_adapter *adapter, u8 bw, u16 *r_bmp_cck_
 		*r_bmp_vht = bmp_vht;
 }
 
-void rtw_get_shared_macid_tx_rate_bmp_by_bw(struct dvobj_priv *dvobj, u8 bw, u16 *r_bmp_cck_ofdm, u32 *r_bmp_ht, u64 *r_bmp_vht)
+void rtw_get_shared_macid_tx_rate_bmp_by_bw(struct dvobj_priv *dvobj, u8 bw, u16 *r_bmp_cck_ofdm, u32 *r_bmp_ht, u32 *r_bmp_vht)
 {
 	struct macid_ctl_t *macid_ctl = dvobj_to_macidctl(dvobj);
 	u16 bmp_cck_ofdm = 0;
 	u32 bmp_ht = 0;
-	u64 bmp_vht = 0;
+	u32 bmp_vht = 0;
 	int i;
 
 	for (i = 0; i < macid_ctl->num; i++) {
@@ -541,38 +541,6 @@ void rtw_get_shared_macid_tx_rate_bmp_by_bw(struct dvobj_priv *dvobj, u8 bw, u16
 		*r_bmp_vht = bmp_vht;
 }
 
-void rtw_get_adapter_tx_rate_bmp(_adapter *adapter, u16 r_bmp_cck_ofdm[], u32 r_bmp_ht[], u64 r_bmp_vht[])
-{
-	struct dvobj_priv *dvobj = adapter_to_dvobj(adapter);
-	u8 bw;
-	u16 bmp_cck_ofdm, tmp_cck_ofdm;
-	u32 bmp_ht, tmp_ht;
-	u64 bmp_vht, tmp_vht;
-	int i;
-
-	for (bw = CHANNEL_WIDTH_20; bw <= CHANNEL_WIDTH_160; bw++) {
-		bmp_cck_ofdm = bmp_ht = bmp_vht = 0;
-		if (hal_is_bw_support(adapter, bw)) {
-			{
-				rtw_get_adapter_tx_rate_bmp_by_bw(adapter, bw, &tmp_cck_ofdm, &tmp_ht, &tmp_vht);
-				bmp_cck_ofdm |= tmp_cck_ofdm;
-				bmp_ht |= tmp_ht;
-				bmp_vht |= tmp_vht;
-			}
-			rtw_get_shared_macid_tx_rate_bmp_by_bw(dvobj, bw, &tmp_cck_ofdm, &tmp_ht, &tmp_vht);
-			bmp_cck_ofdm |= tmp_cck_ofdm;
-			bmp_ht |= tmp_ht;
-			bmp_vht |= tmp_vht;
-		}
-		if (bw == CHANNEL_WIDTH_20)
-			r_bmp_cck_ofdm[bw] = bmp_cck_ofdm;
-		if (bw <= CHANNEL_WIDTH_40)
-			r_bmp_ht[bw] = bmp_ht;
-		if (bw <= CHANNEL_WIDTH_160)
-			r_bmp_vht[bw] = bmp_vht;
-	}
-}
-
 void rtw_update_tx_rate_bmp(struct dvobj_priv *dvobj)
 {
 	struct rf_ctl_t *rf_ctl = dvobj_to_rfctl(dvobj);
@@ -581,8 +549,14 @@ void rtw_update_tx_rate_bmp(struct dvobj_priv *dvobj)
 	u8 bw;
 	u16 bmp_cck_ofdm, tmp_cck_ofdm;
 	u32 bmp_ht, tmp_ht, ori_bmp_ht[2];
-	u64 bmp_vht, tmp_vht, ori_bmp_vht[4];
+	u8 ori_highest_ht_rate_bw_bmp;
+	u32 bmp_vht, tmp_vht, ori_bmp_vht[4];
+	u8 ori_highest_vht_rate_bw_bmp;
 	int i;
+
+	/* backup the original ht & vht highest bw bmp */
+	ori_highest_ht_rate_bw_bmp = rf_ctl->highest_ht_rate_bw_bmp;
+	ori_highest_vht_rate_bw_bmp = rf_ctl->highest_vht_rate_bw_bmp;
 
 	for (bw = CHANNEL_WIDTH_20; bw <= CHANNEL_WIDTH_160; bw++) {
 		/* backup the original ht & vht bmp */
@@ -614,22 +588,15 @@ void rtw_update_tx_rate_bmp(struct dvobj_priv *dvobj)
 			rf_ctl->rate_bmp_vht_by_bw[bw] = bmp_vht;
 	}
 
-#if CONFIG_TXPWR_LIMIT
 #ifndef DBG_HIGHEST_RATE_BMP_BW_CHANGE
 #define DBG_HIGHEST_RATE_BMP_BW_CHANGE 0
 #endif
 
-	if (hal_data->txpwr_limit_loaded) {
-		u8 ori_highest_ht_rate_bw_bmp;
-		u8 ori_highest_vht_rate_bw_bmp;
+	{
 		u8 highest_rate_bw;
 		u8 highest_rate_bw_bmp;
 		u8 update_ht_rs = _FALSE;
 		u8 update_vht_rs = _FALSE;
-
-		/* backup the original ht & vht highest bw bmp */
-		ori_highest_ht_rate_bw_bmp = rf_ctl->highest_ht_rate_bw_bmp;
-		ori_highest_vht_rate_bw_bmp = rf_ctl->highest_vht_rate_bw_bmp;
 
 		highest_rate_bw_bmp = BW_CAP_20M;
 		highest_rate_bw = CHANNEL_WIDTH_20;
@@ -649,8 +616,7 @@ void rtw_update_tx_rate_bmp(struct dvobj_priv *dvobj)
 				RTW_INFO("highest_ht_rate_bw_bmp:0x%02x=>0x%02x\n", ori_highest_ht_rate_bw_bmp, rf_ctl->highest_ht_rate_bw_bmp);
 				RTW_INFO("rate_bmp_ht_by_bw[%u]:0x%08x=>0x%08x\n", highest_rate_bw, ori_bmp_ht[highest_rate_bw], rf_ctl->rate_bmp_ht_by_bw[highest_rate_bw]);
 			}
-			if (rf_ctl->rate_bmp_ht_by_bw[highest_rate_bw])
-				update_ht_rs = _TRUE;
+			update_ht_rs = _TRUE;
 		}
 
 		highest_rate_bw_bmp = BW_CAP_20M;
@@ -665,21 +631,40 @@ void rtw_update_tx_rate_bmp(struct dvobj_priv *dvobj)
 		rf_ctl->highest_vht_rate_bw_bmp = highest_rate_bw_bmp;
 
 		if (ori_highest_vht_rate_bw_bmp != rf_ctl->highest_vht_rate_bw_bmp
-			|| largest_bit_64(ori_bmp_vht[highest_rate_bw]) != largest_bit_64(rf_ctl->rate_bmp_vht_by_bw[highest_rate_bw])
+			|| largest_bit(ori_bmp_vht[highest_rate_bw]) != largest_bit(rf_ctl->rate_bmp_vht_by_bw[highest_rate_bw])
 		) {
 			if (DBG_HIGHEST_RATE_BMP_BW_CHANGE) {
 				RTW_INFO("highest_vht_rate_bw_bmp:0x%02x=>0x%02x\n", ori_highest_vht_rate_bw_bmp, rf_ctl->highest_vht_rate_bw_bmp);
-				RTW_INFO("rate_bmp_vht_by_bw[%u]:0x%016llx=>0x%016llx\n", highest_rate_bw, ori_bmp_vht[highest_rate_bw], rf_ctl->rate_bmp_vht_by_bw[highest_rate_bw]);
+				RTW_INFO("rate_bmp_vht_by_bw[%u]:0x%08x=>0x%08x\n", highest_rate_bw, ori_bmp_vht[highest_rate_bw], rf_ctl->rate_bmp_vht_by_bw[highest_rate_bw]);
 			}
-			if (rf_ctl->rate_bmp_vht_by_bw[highest_rate_bw])
-				update_vht_rs = _TRUE;
+			update_vht_rs = _TRUE;
 		}
 
 		/* TODO: per rfpath and rate section handling? */
 		if (update_ht_rs == _TRUE || update_vht_rs == _TRUE)
 			rtw_hal_set_tx_power_level(dvobj_get_primary_adapter(dvobj), hal_data->current_channel);
 	}
-#endif /* CONFIG_TXPWR_LIMIT */
+}
+
+inline u16 rtw_get_tx_rate_bmp_cck_ofdm(struct dvobj_priv *dvobj)
+{
+	struct rf_ctl_t *rf_ctl = dvobj_to_rfctl(dvobj);
+
+	return rf_ctl->rate_bmp_cck_ofdm;
+}
+
+inline u32 rtw_get_tx_rate_bmp_ht_by_bw(struct dvobj_priv *dvobj, u8 bw)
+{
+	struct rf_ctl_t *rf_ctl = dvobj_to_rfctl(dvobj);
+
+	return rf_ctl->rate_bmp_ht_by_bw[bw];
+}
+
+inline u32 rtw_get_tx_rate_bmp_vht_by_bw(struct dvobj_priv *dvobj, u8 bw)
+{
+	struct rf_ctl_t *rf_ctl = dvobj_to_rfctl(dvobj);
+
+	return rf_ctl->rate_bmp_vht_by_bw[bw];
 }
 
 u8 rtw_get_tx_bw_bmp_of_ht_rate(struct dvobj_priv *dvobj, u8 rate, u8 max_bw)
@@ -714,14 +699,14 @@ u8 rtw_get_tx_bw_bmp_of_vht_rate(struct dvobj_priv *dvobj, u8 rate, u8 max_bw)
 	struct rf_ctl_t *rf_ctl = dvobj_to_rfctl(dvobj);
 	u8 bw;
 	u8 bw_bmp = 0;
-	u64 rate_bmp;
+	u32 rate_bmp;
 
 	if (!IS_VHT_RATE(rate)) {
 		rtw_warn_on(1);
 		goto exit;
 	}
 
-	rate_bmp = 1ULL << (rate - MGN_VHT1SS_MCS0);
+	rate_bmp = 1 << (rate - MGN_VHT1SS_MCS0);
 
 	if (max_bw > CHANNEL_WIDTH_160)
 		max_bw = CHANNEL_WIDTH_160;
@@ -734,88 +719,6 @@ u8 rtw_get_tx_bw_bmp_of_vht_rate(struct dvobj_priv *dvobj, u8 rate, u8 max_bw)
 
 exit:
 	return bw_bmp;
-}
-
-s16 rtw_adapter_get_oper_txpwr_max_mbm(_adapter *adapter)
-{
-	s16 mbm = -100 * MBM_PDBM;
-
-	if (MLME_IS_ASOC(adapter)) {
-		struct mlme_ext_priv *mlmeext = &adapter->mlmeextpriv;
-		u8 ch = mlmeext->cur_channel;
-		u8 bw = mlmeext->cur_bwmode;
-		u8 offset = mlmeext->cur_ch_offset;
-		u8 cch = rtw_get_center_ch(ch, bw, offset);
-		u8 hw_rate = MRateToHwRate(mlmeext->tx_rate);
-		u16 bmp_cck_ofdm_by_bw[1] = {0};
-		u32 bmp_ht_by_bw[2] = {0};
-		u64 bmp_vht_by_bw[4] = {0};
-		u16 bmp_cck_ofdm = 0;
-		u32 bmp_ht = 0;
-		u64 bmp_vht = 0;
-		int i;
-
-		rtw_get_adapter_tx_rate_bmp(adapter, bmp_cck_ofdm_by_bw, bmp_ht_by_bw, bmp_vht_by_bw);
-
-		bmp_cck_ofdm |= bmp_cck_ofdm_by_bw[0];
-		for (i = 0; i < 2; i++)
-			bmp_ht |= bmp_ht_by_bw[i];
-		for (i = 0; i < 4; i++)
-			bmp_vht |= bmp_vht_by_bw[i];
-
-		if (IS_LEGACY_HRATE(hw_rate))
-			bmp_cck_ofdm |= BIT(hw_rate);
-		else if (IS_HT_HRATE(hw_rate))
-			bmp_ht |= BIT(hw_rate - DESC_RATEMCS0);
-		else if (IS_VHT_HRATE(hw_rate))
-			bmp_vht |= BIT(hw_rate - DESC_RATEVHTSS1MCS0);
-
-		mbm = phy_get_txpwr_total_max_mbm(adapter
-			, bw, cch, ch, bmp_cck_ofdm, bmp_ht, bmp_vht);
-	}
-
-	return mbm;
-}
-
-s16 rtw_get_oper_txpwr_max_mbm(struct dvobj_priv *dvobj)
-{
-	struct rf_ctl_t *rfctl = dvobj_to_rfctl(dvobj);
-	_adapter *adapter = dvobj_get_primary_adapter(dvobj);
-	s16 mbm = -100 * MBM_PDBM;
-	u8 ch, bw, offset;
-
-	if (rtw_mi_get_ch_setting_union(adapter, &ch, &bw, &offset)) {
-		u8 cch = rtw_get_center_ch(ch, bw, offset);
-		u16 bmp_cck_ofdm = 0;
-		u32 bmp_ht = 0;
-		u64 bmp_vht = 0;
-		int i;
-
-		for (i = 0; i < dvobj->iface_nums; i++) {
-			if (dvobj->padapters[i] && MLME_IS_ASOC(dvobj->padapters[i])) {
-				struct mlme_ext_priv *mlmeext = &(dvobj->padapters[i]->mlmeextpriv);
-				u8 hw_rate = MRateToHwRate(mlmeext->tx_rate);
-
-				if (IS_LEGACY_HRATE(hw_rate))
-					bmp_cck_ofdm |= BIT(hw_rate);
-				else if (IS_HT_HRATE(hw_rate))
-					bmp_ht |= BIT(hw_rate - DESC_RATEMCS0);
-				else if (IS_VHT_HRATE(hw_rate))
-					bmp_vht |= BIT(hw_rate - DESC_RATEVHTSS1MCS0);
-			}
-		}
-
-		bmp_cck_ofdm |= rfctl->rate_bmp_cck_ofdm;
-		for (i = 0; i < 2; i++)
-			bmp_ht |= rfctl->rate_bmp_ht_by_bw[i];
-		for (i = 0; i < 4; i++)
-			bmp_vht |= rfctl->rate_bmp_vht_by_bw[i];
-
-		mbm = phy_get_txpwr_total_max_mbm(adapter
-			, bw, cch, ch, bmp_cck_ofdm, bmp_ht, bmp_vht);
-	}
-
-	return mbm;
 }
 
 u8 query_ra_short_GI(struct sta_info *psta, u8 bw)
@@ -1251,23 +1154,13 @@ u8	qos_acm(u8 acm_mask, u8 priority)
 	return change_priority;
 }
 
-/* refer to IEEE802.11-2016 Table R-3; Comply with IETF RFC4594 */
-static u8 tos_to_up(u8 tos)
+#ifdef CONFIG_USER_PRIORITY_COMPLY_RFC4594_DSCP
+/* refer to IEEE802.11-2016 Table R-3; Comply with Table R-2 (IETF RFC4594) */
+static u8 dscp_to_up_ac(u8 tos)
 {
 	u8 up = 0;
 	u8 dscp;
-	u8 mode = CONFIG_RTW_UP_MAPPING_RULE;
 
-
-	/* tos precedence mapping */
-	if (mode == 0) {
-		up = tos >> 5;
-		return up;
-	}
-
-	/* refer to IEEE802.11-2016 Table R-3;
-	 * DCSP 32(CS4) comply with IETF RFC4594
-	 */
 	dscp = (tos >> 2);
 
 	if ( dscp == 0 )
@@ -1289,25 +1182,27 @@ static u8 tos_to_up(u8 tos)
 
 	return up;
 }
+#endif
 
-static void set_qos(_pkt *pkt, struct pkt_attrib *pattrib)
+static void set_qos(struct pkt_file *ppktfile, struct pkt_attrib *pattrib)
 {
+	struct ethhdr etherhdr;
+	struct iphdr ip_hdr;
 	s32 UserPriority = 0;
 
-	if (!pkt)
-		goto null_pkt;
+
+	_rtw_open_pktfile(ppktfile->pkt, ppktfile);
+	_rtw_pktfile_read(ppktfile, (unsigned char *)&etherhdr, ETH_HLEN);
 
 	/* get UserPriority from IP hdr */
 	if (pattrib->ether_type == 0x0800) {
-		struct pkt_file ppktfile;
-		struct ethhdr etherhdr;
-		struct iphdr ip_hdr;
-
-		_rtw_open_pktfile(pkt, &ppktfile);
-		_rtw_pktfile_read(&ppktfile, (unsigned char *)&etherhdr, ETH_HLEN);
-		_rtw_pktfile_read(&ppktfile, (u8 *)&ip_hdr, sizeof(ip_hdr));
+		_rtw_pktfile_read(ppktfile, (u8 *)&ip_hdr, sizeof(ip_hdr));
 		/*		UserPriority = (ntohs(ip_hdr.tos) >> 5) & 0x3; */
-		UserPriority = tos_to_up(ip_hdr.tos);
+#ifdef CONFIG_USER_PRIORITY_COMPLY_RFC4594_DSCP
+		UserPriority = dscp_to_up_ac(ip_hdr.tos);
+#else
+		UserPriority = ip_hdr.tos >> 5;
+#endif
 	}
 	/*
 		else if (pattrib->ether_type == 0x888e) {
@@ -1325,8 +1220,6 @@ static void set_qos(_pkt *pkt, struct pkt_attrib *pattrib)
 	if (pattrib->ether_type == ETH_P_ARP)
 		UserPriority = 7;
 	#endif/*CONFIG_IP_R_MONITOR*/
-
-null_pkt:
 	pattrib->priority = UserPriority;
 	pattrib->hdrlen = WLAN_HDR_A3_QOS_LEN;
 	pattrib->subtype = WIFI_QOS_DATA_TYPE;
@@ -1423,7 +1316,7 @@ inline u8 rtw_get_hwseq_no(_adapter *padapter)
 	u8 hwseq_num = 0;
 
 #ifdef CONFIG_CONCURRENT_MODE
-	#if defined(CONFIG_RTL8822B) || defined(CONFIG_RTL8821C) || defined(CONFIG_RTL8822C) || defined(CONFIG_RTL8814B)
+	#if defined(CONFIG_RTL8822B) || defined(CONFIG_RTL8821C) || defined(CONFIG_RTL8822C)
 	hwseq_num = padapter->iface_id;
 	if (hwseq_num > 3)
 		hwseq_num = 3;
@@ -1562,16 +1455,15 @@ get_sta_info:
 
 		pattrib->icmp_pkt = 0;
 		pattrib->dhcp_pkt = 0;
-		pattrib->hipriority_pkt = 0;
 
 		if (GET_IPV4_PROTOCOL(ip) == 0x01) { /* ICMP */
 			pattrib->icmp_pkt = 1;
 			DBG_COUNTER(padapter->tx_logs.core_tx_upd_attrib_icmp);
 
 		} else if (GET_IPV4_PROTOCOL(ip) == 0x11) { /* UDP */
-			u8 udp[24];
+			u8 udp[8];
 
-			_rtw_pktfile_read(&pktfile, udp, 24);
+			_rtw_pktfile_read(&pktfile, udp, 8);
 
 			if ((GET_UDP_SRC(udp) == 68 && GET_UDP_DST(udp) == 67)
 				|| (GET_UDP_SRC(udp) == 67 && GET_UDP_DST(udp) == 68)
@@ -1583,12 +1475,6 @@ get_sta_info:
 					if (0)
 						RTW_INFO("send DHCP packet\n");
 				}
-			}
-
-			/* WaveAgent packet, increase priority so that the system can read data in time */
-			if (((GET_UDP_SIG1(udp) == 0xcc) || (GET_UDP_SIG1(udp) == 0xdd)) &&
-				(GET_UDP_SIG2(udp) == 0xe2)) {
-				pattrib->hipriority_pkt = 1;
 			}
 
 		} else if (GET_IPV4_PROTOCOL(ip) == 0x06 /* TCP */
@@ -1676,7 +1562,7 @@ get_sta_info:
 		| WIFI_ADHOC_STATE | WIFI_ADHOC_MASTER_STATE)
 	) {
 		if (pattrib->qos_en) {
-			set_qos(pkt, pattrib);
+			set_qos(&pktfile, pattrib);
 			#ifdef CONFIG_RTW_MESH
 			if (MLME_IS_MESH(padapter))
 				rtw_mesh_tx_set_whdr_mctrl_len(pattrib->mesh_frame_mode, pattrib);
@@ -1686,12 +1572,12 @@ get_sta_info:
 #ifdef CONFIG_TDLS
 		if (pattrib->direct_link == _TRUE) {
 			if (pattrib->qos_en)
-				set_qos(pkt, pattrib);
+				set_qos(&pktfile, pattrib);
 		} else
 #endif
 		{
 			if (pqospriv->qos_option) {
-				set_qos(pkt, pattrib);
+				set_qos(&pktfile, pattrib);
 
 				if (pmlmepriv->acm_mask != 0)
 					pattrib->priority = qos_acm(pmlmepriv->acm_mask, pattrib->priority);
@@ -4539,12 +4425,6 @@ static void do_queue_select(_adapter	*padapter, struct pkt_attrib *pattrib)
 #else /* !CONFIG_MCC_MODE */
 	pattrib->qsel = qsel;
 #endif /* CONFIG_MCC_MODE */
-
-	/* high priority packet */
-	if (pattrib->hipriority_pkt) {
-		pattrib->qsel = QSLT_VO;
-		pattrib->priority  = QSLT_VO;
-	}
 }
 
 /*
@@ -5128,9 +5008,9 @@ sint xmitframe_enqueue_for_sleeping_sta(_adapter *padapter, struct xmit_frame *p
 			/* RTW_INFO_DUMP("enqueue, tim=", pstapriv->tim_bitmap, pstapriv->aid_bmp_len); */
 			if (update_tim == _TRUE) {
 				if (is_broadcast_mac_addr(pattrib->ra))
-					_update_beacon(padapter, _TIM_IE_, NULL, _TRUE, 0, "buffer BC");
+					_update_beacon(padapter, _TIM_IE_, NULL, _TRUE, "buffer BC");
 				else
-					_update_beacon(padapter, _TIM_IE_, NULL, _TRUE, 0, "buffer MC");
+					_update_beacon(padapter, _TIM_IE_, NULL, _TRUE, "buffer MC");
 			} else
 				chk_bmc_sleepq_cmd(padapter);
 
@@ -5197,7 +5077,7 @@ sint xmitframe_enqueue_for_sleeping_sta(_adapter *padapter, struct xmit_frame *p
 				if (update_tim == _TRUE) {
 					/* RTW_INFO("sleepq_len==1, update BCNTIM\n"); */
 					/* upate BCN for TIM IE */
-					_update_beacon(padapter, _TIM_IE_, NULL, _TRUE, 0, "buffer UC");
+					_update_beacon(padapter, _TIM_IE_, NULL, _TRUE, "buffer UC");
 				}
 			}
 
@@ -5482,11 +5362,11 @@ _exit:
 	if (update_mask) {
 		/* update_BCNTIM(padapter); */
 		if ((update_mask & (BIT(0) | BIT(1))) == (BIT(0) | BIT(1)))
-			_update_beacon(padapter, _TIM_IE_, NULL, _TRUE, 0, "clear UC&BMC");
+			_update_beacon(padapter, _TIM_IE_, NULL, _TRUE, "clear UC&BMC");
 		else if ((update_mask & BIT(1)) == BIT(1))
-			_update_beacon(padapter, _TIM_IE_, NULL, _TRUE, 0, "clear BMC");
+			_update_beacon(padapter, _TIM_IE_, NULL, _TRUE, "clear BMC");
 		else
-			_update_beacon(padapter, _TIM_IE_, NULL, _TRUE, 0, "clear UC");
+			_update_beacon(padapter, _TIM_IE_, NULL, _TRUE, "clear UC");
 	}
 
 }
@@ -5564,7 +5444,7 @@ void xmit_delivery_enabled_frames(_adapter *padapter, struct sta_info *psta)
 			/* RTW_INFO_DUMP("update_BCNTIM, tim=", pstapriv->tim_bitmap, pstapriv->aid_bmp_len); */
 			/* upate BCN for TIM IE */
 			/* update_BCNTIM(padapter); */
-			update_beacon(padapter, _TIM_IE_, NULL, _TRUE, 0);
+			update_beacon(padapter, _TIM_IE_, NULL, _TRUE);
 			/* update_mask = BIT(0); */
 		}
 
@@ -5657,6 +5537,7 @@ static struct xmit_buf *dequeue_pending_xmitbuf_ext(
 
 	if (_rtw_queue_empty(pqueue) == _FALSE) {
 		_list *plist, *phead;
+		u8 type = 0;
 
 		phead = get_list_head(pqueue);
 		plist = phead;
@@ -5824,7 +5705,7 @@ bool rtw_xmit_ac_blocked(_adapter *adapter)
 #endif/* #ifdef DBG_CONFIG_ERROR_DETECT */
 
 	if (rfctl->offch_state != OFFCHS_NONE
-		#if CONFIG_DFS
+		#ifdef CONFIG_DFS
 		|| IS_RADAR_DETECTED(rfctl) || rfctl->csa_ch
 		#endif
 	) {
@@ -5893,7 +5774,7 @@ void rtw_amsdu_be_timeout_handler(void *FunctionContext)
 	adapter->xmitpriv.amsdu_be_timeout = RTW_AMSDU_TIMER_TIMEOUT;
 
 	if (printk_ratelimit())
-		RTW_INFO("%s Timeout!\n",__FUNCTION__);
+		RTW_DBG("%s Timeout!\n",__FUNCTION__);
 
 	tasklet_hi_schedule(&adapter->xmitpriv.xmit_tasklet);
 }

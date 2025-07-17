@@ -718,8 +718,9 @@ _recv_indicatepkt_drop:
 
 void rtw_os_read_port(_adapter *padapter, struct recv_buf *precvbuf)
 {
-#ifdef CONFIG_USB_HCI
 	struct recv_priv *precvpriv = &padapter->recvpriv;
+
+#ifdef CONFIG_USB_HCI
 
 	precvbuf->ref_cnt--;
 

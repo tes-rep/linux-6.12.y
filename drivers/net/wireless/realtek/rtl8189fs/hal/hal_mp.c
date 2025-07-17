@@ -78,6 +78,7 @@ u8 MgntQuery_NssTxRate(u16 Rate)
 
 void hal_mpt_SwitchRfSetting(PADAPTER	pAdapter)
 {
+	HAL_DATA_TYPE		*pHalData = GET_HAL_DATA(pAdapter);
 	PMPT_CONTEXT		pMptCtx = &(pAdapter->mppriv.mpt_ctx);
 	u8				ChannelToSw = pMptCtx->MptChannelToSw;
 	u32				ulRateIdx = pMptCtx->mpt_rate_index;
@@ -317,7 +318,9 @@ void hal_mpt_CCKTxPowerAdjust(PADAPTER Adapter, BOOLEAN bInCH14)
 
 void hal_mpt_SetChannel(PADAPTER pAdapter)
 {
+	enum rf_path eRFPath;
 	HAL_DATA_TYPE	*pHalData = GET_HAL_DATA(pAdapter);
+	struct dm_struct		*pDM_Odm = &(pHalData->odmpriv);
 	struct mp_priv	*pmp = &pAdapter->mppriv;
 	u8		channel = pmp->channel;
 	u8		bandwidth = pmp->bandwidth;
@@ -371,6 +374,7 @@ void mpt_SetTxPower_Old(PADAPTER pAdapter, MPT_TXPWR_DEF Rate, u8 *pTxPower)
 	switch (Rate) {
 	case MPT_CCK: {
 		u32	TxAGC = 0, pwr = 0;
+		u8	rf;
 
 		pwr = pTxPower[RF_PATH_A];
 		if (pwr < 0x3f) {
@@ -389,7 +393,7 @@ void mpt_SetTxPower_Old(PADAPTER pAdapter, MPT_TXPWR_DEF Rate, u8 *pTxPower)
 
 	case MPT_OFDM_AND_HT: {
 		u32	TxAGC = 0;
-		u8	pwr = 0;
+		u8	pwr = 0, rf;
 
 		pwr = pTxPower[0];
 		if (pwr < 0x3f) {
@@ -435,7 +439,7 @@ mpt_SetTxPower(
 	u8 path = 0 , i = 0, MaxRate = MGN_6M;
 	u8 StartPath = RF_PATH_A, EndPath = RF_PATH_B;
 
-	if (IS_HARDWARE_TYPE_8814A(pAdapter) || IS_HARDWARE_TYPE_8814B(pAdapter))
+	if (IS_HARDWARE_TYPE_8814A(pAdapter))
 		EndPath = RF_PATH_D;
 	else if (IS_HARDWARE_TYPE_8188F(pAdapter) || IS_HARDWARE_TYPE_8188GTV(pAdapter)
 		|| IS_HARDWARE_TYPE_8723D(pAdapter) || IS_HARDWARE_TYPE_8821C(pAdapter))
@@ -533,6 +537,7 @@ void hal_mpt_SetTxPower(PADAPTER pAdapter)
 		    IS_HARDWARE_TYPE_8188F(pAdapter) ||
 		    IS_HARDWARE_TYPE_8188GTV(pAdapter)
 		) {
+			u8 path = (pHalData->antenna_tx_path == ANTENNA_A) ? (RF_PATH_A) : (RF_PATH_B);
 
 			RTW_INFO("===> MPT_ProSetTxPower: Old\n");
 
@@ -854,9 +859,8 @@ void mpt_SetRFPath_8814A(PADAPTER	pAdapter)
 
 	mpt_ToggleIG_8814A(pAdapter);
 }
-
 #endif /* CONFIG_RTL8814A */
-#if defined(CONFIG_RTL8814A) || defined(CONFIG_RTL8822B) || defined(CONFIG_RTL8821C)  || defined(CONFIG_RTL8822C) || defined(CONFIG_RTL8814B)
+#if defined(CONFIG_RTL8814A) || defined(CONFIG_RTL8822B) || defined(CONFIG_RTL8821C)  || defined(CONFIG_RTL8822C)
 void
 mpt_SetSingleTone_8814A(
 		PADAPTER	pAdapter,
@@ -951,16 +955,8 @@ mpt_SetSingleTone_8814A(
 
 		phy_set_bb_reg(pAdapter, rCCAonSec_Jaguar, BIT1, 0x0); /* Enable CCA*/
 
-		if (bEnPMacTx == FALSE) {
-			if(IS_HARDWARE_TYPE_JAGUAR3(pAdapter)) {
-#ifdef	PHYDM_MP_SUPPORT
-					phydm_stop_ofdm_cont_tx(pAdapter);
-					pMptCtx->bCckContTx = FALSE;
-					pMptCtx->bOfdmContTx = FALSE;
-#endif
-			} else
-					hal_mpt_SetContinuousTx(pAdapter, _FALSE);
-		}
+		if (bEnPMacTx == FALSE)
+			hal_mpt_SetContinuousTx(pAdapter, _FALSE);
 
 		phy_set_bb_reg(pAdapter, rA_TxScale_Jaguar, bMaskDWord, regIG0); /* 0xC1C[31:21]*/
 		phy_set_bb_reg(pAdapter, rB_TxScale_Jaguar, bMaskDWord, regIG1); /* 0xE1C[31:21]*/
@@ -981,7 +977,6 @@ void mpt_SetRFPath_8812A(PADAPTER pAdapter)
 	u8		bandwidth = pmp->bandwidth;
 	u8		eLNA_2g = pHalData->ExternalLNA_2G;
 	u32		ulAntennaTx, ulAntennaRx;
-	u32 reg0xC50 = 0;
 
 	ulAntennaTx = pHalData->antenna_tx_path;
 	ulAntennaRx = pHalData->AntennaRxPath;
@@ -1012,6 +1007,7 @@ void mpt_SetRFPath_8812A(PADAPTER pAdapter)
 	}
 
 	switch (ulAntennaRx) {
+		u32 reg0xC50 = 0;
 	case ANTENNA_A:
 		phy_set_bb_reg(pAdapter, rRxPath_Jaguar, bMaskByte0, 0x11);
 		phy_set_rf_reg(pAdapter, RF_PATH_B, RF_AC_Jaguar, 0xF0000, 0x1); /*/ RF_B_0x0[19:16] = 1, Standby mode*/
@@ -1098,7 +1094,6 @@ void mpt_SetRFPath_8723B(PADAPTER pAdapter)
 	PMPT_CONTEXT	pMptCtx = &(pAdapter->mppriv.mpt_ctx);
 	struct dm_struct	*pDM_Odm = &pHalData->odmpriv;
 	struct dm_rf_calibration_struct	*pRFCalibrateInfo = &(pDM_Odm->rf_calibrate_info);
-	u8 i;
 
 	ulAntennaTx = pHalData->antenna_tx_path;
 	ulAntennaRx = pHalData->AntennaRxPath;
@@ -1109,6 +1104,7 @@ void mpt_SetRFPath_8723B(PADAPTER pAdapter)
 	}
 
 	switch (pAdapter->mppriv.antenna_tx) {
+		u8 p = 0, i = 0;
 	case ANTENNA_A: { /*/ Actually path S1  (Wi-Fi)*/
 		pMptCtx->mpt_rf_path = RF_PATH_A;
 		phy_set_bb_reg(pAdapter, rS0S1_PathSwitch, BIT9 | BIT8 | BIT7, 0x0);
@@ -1177,7 +1173,6 @@ void mpt_SetRFPath_8703B(PADAPTER pAdapter)
 	PMPT_CONTEXT		pMptCtx = &(pAdapter->mppriv.mpt_ctx);
 	struct dm_struct		*pDM_Odm = &pHalData->odmpriv;
 	struct dm_rf_calibration_struct			*pRFCalibrateInfo = &(pDM_Odm->rf_calibrate_info);
-	u8 i;
 
 	ulAntennaTx = pHalData->antenna_tx_path;
 	ulAntennaRx = pHalData->AntennaRxPath;
@@ -1188,6 +1183,8 @@ void mpt_SetRFPath_8703B(PADAPTER pAdapter)
 	}
 
 	switch (pAdapter->mppriv.antenna_tx) {
+		u8 p = 0, i = 0;
+
 	case ANTENNA_A: { /* Actually path S1  (Wi-Fi) */
 		pMptCtx->mpt_rf_path = RF_PATH_A;
 		phy_set_bb_reg(pAdapter, rS0S1_PathSwitch, BIT9 | BIT8 | BIT7, 0x0);
@@ -1455,8 +1452,8 @@ void mpt_set_rfpath_8192f(PADAPTER	pAdapter)
 	u16		ForcedDataRate = mpt_to_mgnt_rate(pMptCtx->mpt_rate_index);
 	u8				NssforRate, odmNssforRate;
 	u32				ulAntennaTx, ulAntennaRx;
-	enum bb_path	RxAntToPhyDm;
-	enum bb_path	TxAntToPhyDm;
+	u8				RxAntToPhyDm;
+	u8				TxAntToPhyDm;
 
 	ulAntennaTx = pHalData->antenna_tx_path;
 	ulAntennaRx = pHalData->AntennaRxPath;
@@ -1499,7 +1496,7 @@ void mpt_set_rfpath_8192f(PADAPTER	pAdapter)
 			break;
 	}
 
-	phydm_api_trx_mode(GET_PDM_ODM(pAdapter), TxAntToPhyDm, RxAntToPhyDm, TxAntToPhyDm);
+	config_phydm_trx_mode_8192f(GET_PDM_ODM(pAdapter), TxAntToPhyDm, RxAntToPhyDm, FALSE);
 
 }
 
@@ -1567,13 +1564,6 @@ void hal_mpt_SetAntenna(PADAPTER	pAdapter)
 		}
 #endif
 
-#ifdef CONFIG_RTL8814B
-	if (IS_HARDWARE_TYPE_8814B(pAdapter)) {
-		rtl8814b_mp_config_rfpath(pAdapter);
-		return;
-	}
-#endif
-
 	/*	else if (IS_HARDWARE_TYPE_8821B(pAdapter))
 			mpt_SetRFPath_8821B(pAdapter);
 		Prepare for 8822B
@@ -1597,7 +1587,12 @@ s32 hal_mpt_SetThermalMeter(PADAPTER pAdapter, u8 target_ther)
 		return _FAIL;
 	}
 
+
 	target_ther &= 0xff;
+	if (target_ther < 0x07)
+		target_ther = 0x07;
+	else if (target_ther > 0x1d)
+		target_ther = 0x1d;
 
 	pHalData->eeprom_thermal_meter = target_ther;
 
@@ -1721,21 +1716,6 @@ void hal_mpt_SetSingleToneTx(PADAPTER pAdapter, u8 bStart)
 
 	if (IS_HARDWARE_TYPE_JAGUAR3(pAdapter)) {
 #ifdef	PHYDM_MP_SUPPORT
-#ifdef CONFIG_RTL8814B
-		if(pHalData->current_channel_bw == CHANNEL_WIDTH_80_80)
-		{
-			/* @Tx mode: RF0x00[19:16]=4'b0010 */
-			config_phydm_write_rf_syn_8814b(pDM_Odm, RF_SYN0, RF_0x0, 0xF0000, 0x2);
-			/* @Lowest RF gain index: RF_0x0[4:0] = 0*/
-			config_phydm_write_rf_syn_8814b(pDM_Odm, RF_SYN0, RF_0x0, 0x1F, 0x0);
-			/* @RF LO enabled */
-			config_phydm_write_rf_syn_8814b(pDM_Odm, RF_SYN0, RF_0x58, BIT(1), 0x1);
-			/* @SYN1 */
-			config_phydm_write_rf_syn_8814b(pDM_Odm, RF_SYN1, RF_0x0, 0xF0000, 0x2);
-			config_phydm_write_rf_syn_8814b(pDM_Odm, RF_SYN1, RF_0x0, 0x1F, 0x0);
-			config_phydm_write_rf_syn_8814b(pDM_Odm, RF_SYN1, RF_0x58, BIT(1), 0x1);
-		}
-#endif
 		phydm_mp_set_single_tone(pDM_Odm, bStart, pMptCtx->mpt_rf_path);
 #endif
 		return;
@@ -2104,9 +2084,9 @@ static	void mpt_StopCckContTx(
 	phy_set_bb_reg(pAdapter, rFPGA0_XB_HSSIParameter1, bMaskDWord, 0x01000100);
 	}
 
-	if (IS_HARDWARE_TYPE_8188E(pAdapter) || IS_HARDWARE_TYPE_8723B(pAdapter) ||
-		IS_HARDWARE_TYPE_8703B(pAdapter) || IS_HARDWARE_TYPE_8188F(pAdapter) ||
-		IS_HARDWARE_TYPE_8723D(pAdapter) || IS_HARDWARE_TYPE_8192F(pAdapter) ||
+	if (IS_HARDWARE_TYPE_8188E(pAdapter) || IS_HARDWARE_TYPE_8723B(pAdapter) || 
+		IS_HARDWARE_TYPE_8703B(pAdapter) || IS_HARDWARE_TYPE_8188F(pAdapter) || 
+		IS_HARDWARE_TYPE_8723D(pAdapter) || IS_HARDWARE_TYPE_8192F(pAdapter) || 
 		IS_HARDWARE_TYPE_8821C(pAdapter) || IS_HARDWARE_TYPE_8188GTV(pAdapter)) {
 		phy_set_bb_reg(pAdapter, 0xA70, BIT(14), bDisable);/* patch Count CCK adjust Rate*/
 	}
@@ -2187,9 +2167,9 @@ static	void mpt_StartCckContTx(
 		phy_set_bb_reg(pAdapter, rFPGA0_XB_HSSIParameter1, bMaskDWord, 0x01000500);
 	}
 
-	if (IS_HARDWARE_TYPE_8188E(pAdapter) || IS_HARDWARE_TYPE_8723B(pAdapter) ||
-		IS_HARDWARE_TYPE_8703B(pAdapter) || IS_HARDWARE_TYPE_8188F(pAdapter) ||
-		IS_HARDWARE_TYPE_8723D(pAdapter) || IS_HARDWARE_TYPE_8192F(pAdapter) ||
+	if (IS_HARDWARE_TYPE_8188E(pAdapter) || IS_HARDWARE_TYPE_8723B(pAdapter) || 
+		IS_HARDWARE_TYPE_8703B(pAdapter) || IS_HARDWARE_TYPE_8188F(pAdapter) || 
+		IS_HARDWARE_TYPE_8723D(pAdapter) || IS_HARDWARE_TYPE_8192F(pAdapter) || 
 		IS_HARDWARE_TYPE_8821C(pAdapter) || IS_HARDWARE_TYPE_8188GTV(pAdapter)) {
 		if (pAdapter->mppriv.rateidx == MPT_RATE_1M) /* patch Count CCK adjust Rate*/
 			phy_set_bb_reg(pAdapter, 0xA70, BIT(14), bDisable);
@@ -2232,15 +2212,15 @@ static	void mpt_StartOfdmContTx(
 		phy_set_bb_reg(pAdapter, rOFDM1_LSTF, BIT30 | BIT29 | BIT28, OFDM_ContinuousTx);
 
 	if (!IS_HARDWARE_TYPE_JAGUAR_ALL(pAdapter)) {
-		phy_set_bb_reg(pAdapter, rFPGA0_XA_HSSIParameter1, bMaskDWord, 0x01000500);
-		phy_set_bb_reg(pAdapter, rFPGA0_XB_HSSIParameter1, bMaskDWord, 0x01000500);
+	phy_set_bb_reg(pAdapter, rFPGA0_XA_HSSIParameter1, bMaskDWord, 0x01000500);
+	phy_set_bb_reg(pAdapter, rFPGA0_XB_HSSIParameter1, bMaskDWord, 0x01000500);
 	}
 
 	pMptCtx->bCckContTx = FALSE;
 	pMptCtx->bOfdmContTx = TRUE;
 }	/* mpt_StartOfdmContTx */
 
-#if defined(CONFIG_RTL8814A) || defined(CONFIG_RTL8821B) || defined(CONFIG_RTL8822B) || defined(CONFIG_RTL8821C)  || defined(CONFIG_RTL8822C) || defined(CONFIG_RTL8814B)
+#if defined(CONFIG_RTL8814A) || defined(CONFIG_RTL8821B) || defined(CONFIG_RTL8822B) || defined(CONFIG_RTL8821C)  || defined(CONFIG_RTL8822C)
 #ifdef PHYDM_PMAC_TX_SETTING_SUPPORT
 static void mpt_convert_phydm_txinfo_for_jaguar3(
 	RT_PMAC_TX_INFO	pMacTxInfo, struct phydm_pmac_info *phydmtxinfo)

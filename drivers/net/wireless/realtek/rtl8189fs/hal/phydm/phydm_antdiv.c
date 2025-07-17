@@ -37,130 +37,6 @@
  *****************************************************
  */
 #ifdef CONFIG_PHYDM_ANTENNA_DIVERSITY
-
-#if (RTL8721D_SUPPORT == 1)
-
-void odm_update_rx_idle_ant_8721d(void *dm_void, u8 ant, u32 default_ant,
-				  u32 optional_ant)
-{
-	struct dm_struct *dm = (struct dm_struct *)dm_void;
-	struct phydm_fat_struct *fat_tab = &dm->dm_fat_table;
-
-	odm_set_bb_reg(dm, R_0x864, BIT(5) | BIT(4) | BIT(3), default_ant);
-	/*@Default RX*/
-	odm_set_bb_reg(dm, R_0x864, BIT(8) | BIT(7) | BIT(6), optional_ant);
-	/*@Optional RX*/
-	odm_set_bb_reg(dm, R_0x860, BIT(14) | BIT(13) | BIT(12), default_ant);
-	/*@Default TX*/
-	fat_tab->rx_idle_ant = ant;
-}
-
-void odm_trx_hw_ant_div_init_8721d(void *dm_void)
-{
-	struct dm_struct *dm = (struct dm_struct *)dm_void;
-
-	PHYDM_DBG(dm, DBG_ANT_DIV,
-		  "[8721D] AntDiv_Init =>  ant_div_type=[CG_TRX_HW_ANTDIV]\n");
-
-	/*@BT Coexistence*/
-	/*@keep antsel_map when GNT_BT = 1*/
-	odm_set_bb_reg(dm, R_0x864, BIT(12), 1);
-	/* @Disable hw antsw & fast_train.antsw when GNT_BT=1 */
-	odm_set_bb_reg(dm, R_0x874, BIT(23), 0);
-	/* @Disable hw antsw & fast_train.antsw when BT TX/RX */
-	odm_set_bb_reg(dm, R_0xe64, 0xFFFF0000, 0x000c);
-
-	u32 sysreg408 = HAL_READ32(SYSTEM_CTRL_BASE_LP, 0x0408);
-
-	sysreg408 &= ~0x0000001F;
-	sysreg408 |= 0x12;
-	HAL_WRITE32(SYSTEM_CTRL_BASE_LP, 0x0408, sysreg408);
-
-	u32 sysreg410 = HAL_READ32(SYSTEM_CTRL_BASE_LP, 0x0410);
-
-	sysreg410 &= ~0x0000001F;
-	sysreg410 |= 0x12;
-	HAL_WRITE32(SYSTEM_CTRL_BASE_LP, 0x0410, sysreg410);
-
-	u32 sysreg208 = HAL_READ32(SYSTEM_CTRL_BASE_LP, REG_LP_FUNC_EN0);
-
-	sysreg208 |= BIT(28);
-	HAL_WRITE32(SYSTEM_CTRL_BASE_LP, REG_LP_FUNC_EN0, sysreg208);
-
-	u32 sysreg344 =
-		      HAL_READ32(SYSTEM_CTRL_BASE_LP, REG_AUDIO_SHARE_PAD_CTRL);
-
-	sysreg344 |= BIT(9);
-	HAL_WRITE32(SYSTEM_CTRL_BASE_LP, REG_AUDIO_SHARE_PAD_CTRL, sysreg344);
-
-	u32 sysreg280 = HAL_READ32(SYSTEM_CTRL_BASE_LP, REG_LP_SYSPLL_CTRL0);
-
-	sysreg280 |= 0x7;
-	HAL_WRITE32(SYSTEM_CTRL_BASE_LP, REG_LP_SYSPLL_CTRL0, sysreg280);
-
-	sysreg344 |= BIT(8);
-	HAL_WRITE32(SYSTEM_CTRL_BASE_LP, REG_AUDIO_SHARE_PAD_CTRL, sysreg344);
-
-	sysreg344 |= BIT(0);
-	HAL_WRITE32(SYSTEM_CTRL_BASE_LP, REG_AUDIO_SHARE_PAD_CTRL, sysreg344);
-
-	odm_set_bb_reg(dm, R_0x930, 0xF00, 8); /* RFE CTRL_2 ANTSEL0 */
-	odm_set_bb_reg(dm, R_0x930, 0xF000, 8); /* RFE CTRL_3 ANTSEL0 */
-	odm_set_bb_reg(dm, R_0x92c, BIT(3) | BIT(2), 2);
-
-	odm_set_bb_reg(dm, R_0x870, BIT(9) | BIT(8), 0);
-	odm_set_bb_reg(dm, R_0x804, 0xF00, 1); /* r_keep_rfpin */
-	odm_set_bb_reg(dm, R_0x944, 0x0000000C, 0x3); /* PAD in/output CTRL */
-
-	/*PTA setting: WL_BB_SEL_BTG_TRXG_anta,  (1: HW CTRL  0: SW CTRL)*/
-	/*odm_set_bb_reg(dm, R_0x948, BIT6, 0);*/
-	/*odm_set_bb_reg(dm, R_0x948, BIT8, 0);*/
-	/*@GNT_WL tx*/
-	odm_set_bb_reg(dm, R_0x950, BIT(29), 0);
-
-	/*@Mapping Table*/
-	odm_set_bb_reg(dm, R_0x914, MASKBYTE0, 0);
-	odm_set_bb_reg(dm, R_0x914, MASKBYTE1, 1);
-	/* odm_set_bb_reg(dm, R_0x864, BIT5|BIT4|BIT3, 0); */
-	/* odm_set_bb_reg(dm, R_0x864, BIT8|BIT7|BIT6, 1); */
-
-	/* Set WLBB_SEL_RF_ON 1 if RXFIR_PWDB > 0xCcc[3:0] */
-	odm_set_bb_reg(dm, R_0xccc, BIT(12), 0);
-	/* @Low-to-High threshold for WLBB_SEL_RF_ON */
-	/*when OFDM enable */
-	odm_set_bb_reg(dm, R_0xccc, 0x0F, 0x01);
-	/* @High-to-Low threshold for WLBB_SEL_RF_ON */
-	/* when OFDM enable */
-	odm_set_bb_reg(dm, R_0xccc, 0xF0, 0x0);
-	/* @b Low-to-High threshold for WLBB_SEL_RF_ON*/
-	/*when OFDM disable ( only CCK ) */
-	odm_set_bb_reg(dm, R_0xabc, 0xFF, 0x06);
-	/* @High-to-Low threshold for WLBB_SEL_RF_ON*/
-	/* when OFDM disable ( only CCK ) */
-	odm_set_bb_reg(dm, R_0xabc, 0xFF00, 0x00);
-
-	/*OFDM HW AntDiv Parameters*/
-	odm_set_bb_reg(dm, R_0xca4, 0x7FF, 0xa0);
-	odm_set_bb_reg(dm, R_0xca4, 0x7FF000, 0x00);
-	odm_set_bb_reg(dm, R_0xc5c, BIT(20) | BIT(19) | BIT(18), 0x04);
-
-	/*@CCK HW AntDiv Parameters*/
-	odm_set_bb_reg(dm, R_0xa74, BIT(7), 1);
-	odm_set_bb_reg(dm, R_0xa0c, BIT(4), 1);
-	odm_set_bb_reg(dm, R_0xaa8, BIT(8), 0);
-
-	odm_set_bb_reg(dm, R_0xa0c, 0x0F, 0xf);
-	odm_set_bb_reg(dm, R_0xa14, 0x1F, 0x8);
-	odm_set_bb_reg(dm, R_0xa10, BIT(13), 0x1);
-	odm_set_bb_reg(dm, R_0xa74, BIT(8), 0x0);
-	odm_set_bb_reg(dm, R_0xb34, BIT(30), 0x1);
-
-	/*@disable antenna training	*/
-	odm_set_bb_reg(dm, R_0xe08, BIT(16), 0);
-	odm_set_bb_reg(dm, R_0xc50, BIT(8), 0);
-}
-#endif
-
 void odm_stop_antenna_switch_dm(void *dm_void)
 {
 	struct dm_struct *dm = (struct dm_struct *)dm_void;
@@ -1738,6 +1614,128 @@ void phydm_set_tx_ant_pwr_8723d(void *dm_void, u8 ant)
 }
 #endif
 
+#if (RTL8721D_SUPPORT == 1)
+
+void odm_update_rx_idle_ant_8721d(void *dm_void, u8 ant, u32 default_ant,
+				  u32 optional_ant)
+{
+	struct dm_struct *dm = (struct dm_struct *)dm_void;
+	struct phydm_fat_struct *fat_tab = &dm->dm_fat_table;
+
+	odm_set_bb_reg(dm, R_0x864, BIT(5) | BIT(4) | BIT(3), default_ant);
+	/*@Default RX*/
+	odm_set_bb_reg(dm, R_0x864, BIT(8) | BIT(7) | BIT(6), optional_ant);
+	/*@Optional RX*/
+	odm_set_bb_reg(dm, R_0x860, BIT(14) | BIT(13) | BIT(12), default_ant);
+	/*@Default TX*/
+	fat_tab->rx_idle_ant = ant;
+}
+
+void odm_trx_hw_ant_div_init_8721d(void *dm_void)
+{
+	struct dm_struct *dm = (struct dm_struct *)dm_void;
+
+	PHYDM_DBG(dm, DBG_ANT_DIV,
+		  "[8721D] AntDiv_Init =>  ant_div_type=[CG_TRX_HW_ANTDIV]\n");
+
+	/*@BT Coexistence*/
+	/*@keep antsel_map when GNT_BT = 1*/
+	odm_set_bb_reg(dm, R_0x864, BIT(12), 1);
+	/* @Disable hw antsw & fast_train.antsw when GNT_BT=1 */
+	odm_set_bb_reg(dm, R_0x874, BIT(23), 0);
+	/* @Disable hw antsw & fast_train.antsw when BT TX/RX */
+	odm_set_bb_reg(dm, R_0xe64, 0xFFFF0000, 0x000c);
+
+	u32 sysreg408 = HAL_READ32(SYSTEM_CTRL_BASE_LP, 0x0408);
+
+	sysreg408 &= ~0x0000001F;
+	sysreg408 |= 0x12;
+	HAL_WRITE32(SYSTEM_CTRL_BASE_LP, 0x0408, sysreg408);
+
+	u32 sysreg410 = HAL_READ32(SYSTEM_CTRL_BASE_LP, 0x0410);
+
+	sysreg410 &= ~0x0000001F;
+	sysreg410 |= 0x12;
+	HAL_WRITE32(SYSTEM_CTRL_BASE_LP, 0x0410, sysreg410);
+
+	u32 sysreg208 = HAL_READ32(SYSTEM_CTRL_BASE_LP, REG_LP_FUNC_EN0);
+
+	sysreg208 |= BIT(28);
+	HAL_WRITE32(SYSTEM_CTRL_BASE_LP, REG_LP_FUNC_EN0, sysreg208);
+
+	u32 sysreg344 =
+		      HAL_READ32(SYSTEM_CTRL_BASE_LP, REG_AUDIO_SHARE_PAD_CTRL);
+
+	sysreg344 |= BIT(9);
+	HAL_WRITE32(SYSTEM_CTRL_BASE_LP, REG_AUDIO_SHARE_PAD_CTRL, sysreg344);
+
+	u32 sysreg280 = HAL_READ32(SYSTEM_CTRL_BASE_LP, REG_LP_SYSPLL_CTRL0);
+
+	sysreg280 |= 0x7;
+	HAL_WRITE32(SYSTEM_CTRL_BASE_LP, REG_LP_SYSPLL_CTRL0, sysreg280);
+
+	sysreg344 |= BIT(8);
+	HAL_WRITE32(SYSTEM_CTRL_BASE_LP, REG_AUDIO_SHARE_PAD_CTRL, sysreg344);
+
+	sysreg344 |= BIT(0);
+	HAL_WRITE32(SYSTEM_CTRL_BASE_LP, REG_AUDIO_SHARE_PAD_CTRL, sysreg344);
+
+	odm_set_bb_reg(dm, R_0x930, 0xF00, 8); /* RFE CTRL_2 ANTSEL0 */
+	odm_set_bb_reg(dm, R_0x930, 0xF000, 8); /* RFE CTRL_3 ANTSEL0 */
+	odm_set_bb_reg(dm, R_0x92c, BIT(3) | BIT(2), 2);
+
+	odm_set_bb_reg(dm, R_0x870, BIT(9) | BIT(8), 0);
+	odm_set_bb_reg(dm, R_0x804, 0xF00, 1); /* r_keep_rfpin */
+	odm_set_bb_reg(dm, R_0x944, 0x0000000C, 0x3); /* PAD in/output CTRL */
+
+	/*PTA setting: WL_BB_SEL_BTG_TRXG_anta,  (1: HW CTRL  0: SW CTRL)*/
+	/*odm_set_bb_reg(dm, R_0x948, BIT6, 0);*/
+	/*odm_set_bb_reg(dm, R_0x948, BIT8, 0);*/
+	/*@GNT_WL tx*/
+	odm_set_bb_reg(dm, R_0x950, BIT(29), 0);
+
+	/*@Mapping Table*/
+	odm_set_bb_reg(dm, R_0x914, MASKBYTE0, 0);
+	odm_set_bb_reg(dm, R_0x914, MASKBYTE1, 1);
+	/* odm_set_bb_reg(dm, R_0x864, BIT5|BIT4|BIT3, 0); */
+	/* odm_set_bb_reg(dm, R_0x864, BIT8|BIT7|BIT6, 1); */
+
+	/* Set WLBB_SEL_RF_ON 1 if RXFIR_PWDB > 0xCcc[3:0] */
+	odm_set_bb_reg(dm, R_0xccc, BIT(12), 0);
+	/* @Low-to-High threshold for WLBB_SEL_RF_ON */
+	/*when OFDM enable */
+	odm_set_bb_reg(dm, R_0xccc, 0x0F, 0x01);
+	/* @High-to-Low threshold for WLBB_SEL_RF_ON */
+	/* when OFDM enable */
+	odm_set_bb_reg(dm, R_0xccc, 0xF0, 0x0);
+	/* @b Low-to-High threshold for WLBB_SEL_RF_ON*/
+	/*when OFDM disable ( only CCK ) */
+	odm_set_bb_reg(dm, R_0xabc, 0xFF, 0x06);
+	/* @High-to-Low threshold for WLBB_SEL_RF_ON*/
+	/* when OFDM disable ( only CCK ) */
+	odm_set_bb_reg(dm, R_0xabc, 0xFF00, 0x00);
+
+	/*OFDM HW AntDiv Parameters*/
+	odm_set_bb_reg(dm, R_0xca4, 0x7FF, 0xa0);
+	odm_set_bb_reg(dm, R_0xca4, 0x7FF000, 0x00);
+	odm_set_bb_reg(dm, R_0xc5c, BIT(20) | BIT(19) | BIT(18), 0x04);
+
+	/*@CCK HW AntDiv Parameters*/
+	odm_set_bb_reg(dm, R_0xa74, BIT(7), 1);
+	odm_set_bb_reg(dm, R_0xa0c, BIT(4), 1);
+	odm_set_bb_reg(dm, R_0xaa8, BIT(8), 0);
+
+	odm_set_bb_reg(dm, R_0xa0c, 0x0F, 0xf);
+	odm_set_bb_reg(dm, R_0xa14, 0x1F, 0x8);
+	odm_set_bb_reg(dm, R_0xa10, BIT(13), 0x1);
+	odm_set_bb_reg(dm, R_0xa74, BIT(8), 0x0);
+	odm_set_bb_reg(dm, R_0xb34, BIT(30), 0x1);
+
+	/*@disable antenna training	*/
+	odm_set_bb_reg(dm, R_0xe08, BIT(16), 0);
+	odm_set_bb_reg(dm, R_0xc50, BIT(8), 0);
+}
+#endif
 #if (RTL8723B_SUPPORT == 1)
 void odm_trx_hw_ant_div_init_8723b(void *dm_void)
 {

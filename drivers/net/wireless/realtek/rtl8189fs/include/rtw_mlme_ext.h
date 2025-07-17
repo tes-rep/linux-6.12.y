@@ -196,7 +196,7 @@ struct ss_res {
 	u8 next_state; /* will set to state on next cmd hdl */
 	int	bss_cnt;
 	int	channel_idx;
-#if CONFIG_IEEE80211_BAND_5GHZ && CONFIG_DFS
+#ifdef CONFIG_DFS
 	u8 dfs_ch_ssid_scan;
 #endif
 	int	scan_mode;
@@ -277,10 +277,6 @@ enum TDLS_option {
 };
 
 #endif /* CONFIG_TDLS */
-
-#if (KERNEL_VERSION(3, 8, 0) > LINUX_VERSION_CODE)
-#define NL80211_AUTHTYPE_SAE (__NL80211_AUTHTYPE_NUM + 1)
-#endif
 
 /*
  * Usage:
@@ -378,7 +374,7 @@ typedef struct _RT_CHANNEL_INFO {
 #ifdef CONFIG_FIND_BEST_CHANNEL
 	u32				rx_count;
 #endif
-#if CONFIG_IEEE80211_BAND_5GHZ && CONFIG_DFS
+#ifdef CONFIG_DFS
 	#ifdef CONFIG_DFS_MASTER
 	systime non_ocp_end_time;
 	#endif
@@ -685,8 +681,6 @@ void change_band_update_ie(_adapter *padapter, WLAN_BSSID_EX *pnetwork, u8 ch);
 
 void Set_MSR(_adapter *padapter, u8 type);
 
-void rtw_set_external_auth_status(_adapter *padapter, const void *data, int len);
-
 u8 rtw_get_oper_ch(_adapter *adapter);
 void rtw_set_oper_ch(_adapter *adapter, u8 ch);
 u8 rtw_get_oper_bw(_adapter *adapter);
@@ -740,7 +734,7 @@ void get_assoc_AP_Vendor(char *vendor, u8 assoc_AP_vendor);
 void rtw_parse_sta_vendor_ie_8812(_adapter *adapter, struct sta_info *sta, u8 *tlv_ies, u16 tlv_ies_len);
 #endif/*CONFIG_RTS_FULL_BW*/
 #ifdef CONFIG_80211AC_VHT
-unsigned char get_vht_mu_bfer_cap(u8 *pframe, uint len);
+void get_vht_bf_cap(u8 *pframe, uint len, struct vht_bf_cap *bf_cap);
 #endif
 
 int WMM_param_handler(_adapter *padapter, PNDIS_802_11_VARIABLE_IEs	pIE);
@@ -770,15 +764,19 @@ bool rtw_validate_value(u16 EID, u8 *p, u16 len);
 bool is_hidden_ssid(char *ssid, int len);
 bool hidden_ssid_ap(WLAN_BSSID_EX *snetwork);
 void rtw_absorb_ssid_ifneed(_adapter *padapter, WLAN_BSSID_EX *bssid, u8 *pframe);
-int rtw_get_bcn_keys(ADAPTER *Adapter, u8 *pframe, u32 packet_len,
-		struct beacon_keys *recv_beacon);
+
+int rtw_get_bcn_keys(_adapter *adapter, u8 *whdr, u32 flen, struct beacon_keys *bcn_keys);
+int rtw_get_bcn_keys_from_bss(WLAN_BSSID_EX *bss, struct beacon_keys *bcn_keys);
+int rtw_update_bcn_keys_of_network(struct wlan_network *network);
+
 int validate_beacon_len(u8 *pframe, uint len);
-void rtw_dump_bcn_keys(void *sel, struct beacon_keys *recv_beacon);
+void rtw_dump_bcn_keys(struct beacon_keys *recv_beacon);
+bool rtw_bcn_key_compare(struct beacon_keys *cur, struct beacon_keys *recv);
 int rtw_check_bcn_info(ADAPTER *Adapter, u8 *pframe, u32 packet_len);
 void update_beacon_info(_adapter *padapter, u8 *pframe, uint len, struct sta_info *psta);
-#if CONFIG_DFS
+#ifdef CONFIG_DFS
 void process_csa_ie(_adapter *padapter, u8 *ies, uint ies_len);
-#endif
+#endif /* CONFIG_DFS */
 void update_capinfo(PADAPTER Adapter, u16 updateCap);
 void update_wireless_mode(_adapter *padapter);
 void update_tx_basic_rate(_adapter *padapter, u8 modulation);
@@ -842,18 +840,12 @@ void rtw_macid_ctl_set_bw(struct macid_ctl_t *macid_ctl, u8 id, u8 bw);
 void rtw_macid_ctl_set_vht_en(struct macid_ctl_t *macid_ctl, u8 id, u8 en);
 void rtw_macid_ctl_set_rate_bmp0(struct macid_ctl_t *macid_ctl, u8 id, u32 bmp);
 void rtw_macid_ctl_set_rate_bmp1(struct macid_ctl_t *macid_ctl, u8 id, u32 bmp);
-#ifdef CONFIG_PROTSEL_MACSLEEP
-void rtw_macid_ctl_init_sleep_reg(struct macid_ctl_t *macid_ctl, u16 reg_ctrl, u16 reg_info);
-#else
 void rtw_macid_ctl_init_sleep_reg(struct macid_ctl_t *macid_ctl, u16 m0, u16 m1, u16 m2, u16 m3);
-#endif
 void rtw_macid_ctl_init(struct macid_ctl_t *macid_ctl);
 void rtw_macid_ctl_deinit(struct macid_ctl_t *macid_ctl);
 u8 rtw_iface_bcmc_id_get(_adapter *padapter);
 void rtw_iface_bcmc_id_set(_adapter *padapter, u8 mac_id);
-#if defined(DBG_CONFIG_ERROR_RESET) && defined(CONFIG_CONCURRENT_MODE)
-void rtw_iface_bcmc_sec_cam_map_restore(_adapter *adapter);
-#endif
+
 bool rtw_bmp_is_set(const u8 *bmp, u8 bmp_len, u8 id);
 void rtw_bmp_set(u8 *bmp, u8 bmp_len, u8 id);
 void rtw_bmp_clear(u8 *bmp, u8 bmp_len, u8 id);
@@ -878,7 +870,7 @@ void report_wmm_edca_update(_adapter *padapter);
 
 void beacon_timing_control(_adapter *padapter);
 u8 chk_bmc_sleepq_cmd(_adapter *padapter);
-extern u8 set_tx_beacon_cmd(_adapter *padapter, u8 flags);
+extern u8 set_tx_beacon_cmd(_adapter *padapter);
 unsigned int setup_beacon_frame(_adapter *padapter, unsigned char *beacon_frame);
 void update_mgnt_tx_rate(_adapter *padapter, u8 rate);
 void update_monitor_frame_attrib(_adapter *padapter, struct pkt_attrib *pattrib);
@@ -1131,8 +1123,6 @@ u8 tdls_hdl(_adapter *padapter, unsigned char *pbuf);
 u8 run_in_thread_hdl(_adapter *padapter, u8 *pbuf);
 u8 rtw_getmacreg_hdl(_adapter *padapter, u8 *pbuf);
 
-int rtw_sae_preprocess(_adapter *adapter, const u8 *buf, u32 len, u8 tx);
-
 #define GEN_DRV_CMD_HANDLER(size, cmd)	{size, &cmd ## _hdl},
 #define GEN_MLME_EXT_HANDLER(size, cmd)	{size, cmd},
 
@@ -1215,17 +1205,21 @@ struct cmd_hdl wlancmds[] = {
 
 struct C2HEvent_Header {
 
-#ifdef __LITTLE_ENDIAN
+#ifdef CONFIG_LITTLE_ENDIAN
 
 	unsigned int len:16;
 	unsigned int ID:8;
 	unsigned int seq:8;
+
+#elif defined(CONFIG_BIG_ENDIAN)
+
+	unsigned int seq:8;
+	unsigned int ID:8;
+	unsigned int len:16;
 
 #else
 
-	unsigned int seq:8;
-	unsigned int ID:8;
-	unsigned int len:16;
+#  error "Must be LITTLE or BIG Endian"
 
 #endif
 

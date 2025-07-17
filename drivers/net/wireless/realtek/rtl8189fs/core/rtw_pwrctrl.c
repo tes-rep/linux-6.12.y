@@ -117,10 +117,6 @@ void ips_enter(_adapter *padapter)
 	_enter_pwrlock(&pwrpriv->lock);
 	_ips_enter(padapter);
 	_exit_pwrlock(&pwrpriv->lock);
-
-#ifdef CONFIG_PCI_DYNAMIC_ASPM
-	rtw_pci_dynamic_aspm_set_mode(padapter, ASPM_MODE_PS);
-#endif
 }
 
 int _ips_leave(_adapter *padapter)
@@ -175,10 +171,6 @@ int ips_leave(_adapter *padapter)
 	}
 #endif /* DBG_CHECK_FW_PS_STATE */
 	_exit_pwrlock(&pwrpriv->lock);
-
-#ifdef CONFIG_PCI_DYNAMIC_ASPM
-	rtw_pci_dynamic_aspm_set_mode(padapter, ASPM_MODE_PERF);
-#endif
 
 	if (_SUCCESS == ret)
 		odm_dm_reset(&GET_HAL_DATA(padapter)->odmpriv);
@@ -716,7 +708,6 @@ u8 PS_RDY_CHECK(_adapter *padapter)
 		|| check_fwstate(pmlmepriv, WIFI_UNDER_LINKING | WIFI_UNDER_WPS)
 		|| MLME_IS_AP(padapter)
 		|| MLME_IS_MESH(padapter)
-		|| MLME_IS_MONITOR(padapter)
 		|| check_fwstate(pmlmepriv, WIFI_ADHOC_MASTER_STATE | WIFI_ADHOC_STATE)
 		#if defined(CONFIG_P2P) && defined(CONFIG_IOCTL_CFG80211)
 		|| rtw_cfg80211_get_is_roch(padapter) == _TRUE
@@ -860,24 +851,6 @@ void rtw_set_fw_in_ips_mode(PADAPTER padapter, u8 enable)
 	}
 }
 #endif /* CONFIG_PNO_SUPPORT */
-
-
-void rtw_leave_lps_and_chk(_adapter *padapter, u8 ps_mode)
-{
-	struct pwrctrl_priv *pwrpriv = adapter_to_pwrctl(padapter);
-
-#ifdef CONFIG_LPS_ACK
-			_enter_critical_mutex(&pwrpriv->lps_ack_mutex, NULL);
-			rtw_sctx_init(&pwrpriv->lps_ack_sctx, 100);
-#endif /* CONFIG_LPS_ACK */
-			rtw_hal_set_hwreg(padapter, HW_VAR_H2C_FW_PWRMODE, (u8 *)(&ps_mode));
-			rtw_hal_set_hwreg(padapter, HW_VAR_LPS_STATE_CHK, (u8 *)(&ps_mode));
-
-#ifdef CONFIG_LPS_ACK
-			_exit_critical_mutex(&pwrpriv->lps_ack_mutex, NULL);
-#endif /* CONFIG_LPS_ACK */
-			
-}
 
 void rtw_set_ps_mode(PADAPTER padapter, u8 ps_mode, u8 smart_ps, u8 bcn_ant_mode, const char *msg)
 {
@@ -1024,7 +997,9 @@ void rtw_set_ps_mode(PADAPTER padapter, u8 ps_mode, u8 smart_ps, u8 bcn_ant_mode
 				rtw_hal_set_hwreg(padapter, HW_VAR_H2C_INACTIVE_IPS, (u8 *)(&ps_mode));
 #endif /* CONFIG_WOWLAN */
 
-			rtw_leave_lps_and_chk(padapter, ps_mode);
+			rtw_hal_set_hwreg(padapter, HW_VAR_H2C_FW_PWRMODE, (u8 *)(&ps_mode));
+			rtw_hal_set_hwreg(padapter, HW_VAR_LPS_STATE_CHK, (u8 *)(&ps_mode));
+
 
 #ifdef CONFIG_LPS_PG
 			if (pwrpriv->lps_level == LPS_PG) {
@@ -1147,8 +1122,6 @@ void rtw_set_ps_mode(PADAPTER padapter, u8 ps_mode, u8 smart_ps, u8 bcn_ant_mode
 
 }
 
-const char * const LPS_CTRL_PHYDM = "LPS_CTRL_PHYDM";
-
 /*
  *	Description:
  *		Enter the leisure power save mode.
@@ -1225,11 +1198,6 @@ void LPS_Enter(PADAPTER padapter, const char *msg)
 #endif /* CONFIG_RTW_CFGVEDNOR_LLSTATS */
 
 				rtw_set_ps_mode(padapter, pwrpriv->power_mgnt, padapter->registrypriv.smart_ps, 0, buf);
-
-#ifdef CONFIG_PCI_DYNAMIC_ASPM
-				if (msg != LPS_CTRL_PHYDM)
-					rtw_pci_dynamic_aspm_set_mode(padapter, ASPM_MODE_PS);
-#endif
 			}
 		} else
 			pwrpriv->LpsIdleCount++;
@@ -1264,10 +1232,7 @@ void LPS_Leave(PADAPTER padapter, const char *msg)
 
 	if (pwrpriv->bLeisurePs) {
 		if (pwrpriv->pwr_mode != PS_MODE_ACTIVE) {
-#ifdef CONFIG_PCI_DYNAMIC_ASPM
-			if (msg != LPS_CTRL_PHYDM)
-				rtw_pci_dynamic_aspm_set_mode(padapter, ASPM_MODE_PERF);
-#endif
+
 #ifdef CONFIG_WMMPS_STA
 			if (rtw_is_wmmps_mode(padapter))
 				msg = "WMMPS_BUSY";
@@ -1318,7 +1283,6 @@ void rtw_wow_lps_level_decide(_adapter *adapter, u8 wow_en)
 
 void LeaveAllPowerSaveModeDirect(PADAPTER Adapter)
 {
-	struct dvobj_priv *dvobj = adapter_to_dvobj(Adapter);
 	PADAPTER pri_padapter = GET_PRIMARY_ADAPTER(Adapter);
 	struct pwrctrl_priv *pwrpriv = adapter_to_pwrctl(Adapter);
 #ifdef CONFIG_LPS_LCLK
@@ -1327,7 +1291,6 @@ void LeaveAllPowerSaveModeDirect(PADAPTER Adapter)
 #endif /* CONFIG_DETECT_CPWM_BY_POLLING */
 	u8 rpwm;
 #endif
-	int i;
 
 	RTW_INFO("%s.....\n", __FUNCTION__);
 
@@ -1361,13 +1324,7 @@ void LeaveAllPowerSaveModeDirect(PADAPTER Adapter)
 #endif/*CONFIG_LPS_LCLK*/
 
 #ifdef CONFIG_P2P_PS
-		for (i = 0; i < dvobj->iface_nums; i++) {
-			_adapter *iface = dvobj->padapters[i];
-			struct wifidirect_info *pwdinfo = &(iface->wdinfo);
-
-			if (pwdinfo->p2p_ps_mode > P2P_PS_NONE)
-				p2p_ps_wk_cmd(iface, P2P_PS_DISABLE, 0);
-		}
+		p2p_ps_wk_cmd(pri_padapter, P2P_PS_DISABLE, 0);
 #endif /* CONFIG_P2P_PS */
 
 #ifdef CONFIG_LPS
@@ -2335,10 +2292,7 @@ void rtw_init_pwrctrl_priv(PADAPTER padapter)
 	rtw_hal_set_hwreg(padapter, HW_VAR_LPS_POFF_INIT, 0);
 #endif
 
-#ifdef CONFIG_LPS_ACK
-	_rtw_mutex_init(&pwrctrlpriv->lps_ack_mutex);
-	pwrctrlpriv->lps_ack_status = -1;
-#endif /* CONFIG_LPS_ACK */
+
 }
 
 
@@ -2406,9 +2360,6 @@ void rtw_free_pwrctrl_priv(PADAPTER adapter)
 	_free_pwrlock(&pwrctrlpriv->lock);
 	_free_pwrlock(&pwrctrlpriv->check_32k_lock);
 
-#ifdef CONFIG_LPS_ACK
-	_rtw_mutex_free(&pwrctrlpriv->lps_ack_mutex);
-#endif /* CONFIG_LPS_ACK */
 }
 
 #ifdef CONFIG_RESUME_IN_WORKQUEUE

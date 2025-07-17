@@ -149,7 +149,7 @@ struct	intf_hdl {
 
 struct reg_protocol_rd {
 
-#ifdef __LITTLE_ENDIAN	
+#ifdef CONFIG_LITTLE_ENDIAN
 
 	/* DW1 */
 	u32		NumOfTrans:4;
@@ -207,7 +207,7 @@ struct reg_protocol_rd {
 struct reg_protocol_wt {
 
 
-#ifdef __LITTLE_ENDIAN
+#ifdef CONFIG_LITTLE_ENDIAN
 
 	/* DW1 */
 	u32		NumOfTrans:4;
@@ -356,9 +356,6 @@ u32 match_read_sniff(_adapter *adapter, u32 addr, u16 len, u32 val);
 u32 match_write_sniff(_adapter *adapter, u32 addr, u16 len, u32 val);
 bool match_rf_read_sniff_ranges(_adapter *adapter, u8 path, u32 addr, u32 mask);
 bool match_rf_write_sniff_ranges(_adapter *adapter, u8 path, u32 addr, u32 mask);
-
-void dbg_rtw_reg_read_monitor(_adapter *adapter, u32 addr, u32 len, u32 val, const char *caller, const int line);
-void dbg_rtw_reg_write_monitor(_adapter *adapter, u32 addr, u32 len, u32 val, const char *caller, const int line);
 
 extern u8 dbg_rtw_read8(_adapter *adapter, u32 addr, const char *caller, const int line);
 extern u16 dbg_rtw_read16(_adapter *adapter, u32 addr, const char *caller, const int line);

@@ -47,8 +47,6 @@ struct dm_dack_info {
 	u32 qc_a;
 	u32 ic_b;
 	u32 qc_b;
-	boolean dack_en;
-	u16 msbk_d[2][2][15];
 };
 
 struct dm_iqk_info {
@@ -73,8 +71,7 @@ struct dm_iqk_info {
 #if (RTL8814A_SUPPORT == 1 || RTL8822B_SUPPORT == 1 || RTL8821C_SUPPORT == 1 ||\
 	RTL8195B_SUPPORT == 1 || RTL8198F_SUPPORT == 1 ||\
 	RTL8814B_SUPPORT == 1 || RTL8822C_SUPPORT == 1 ||\
-	RTL8812F_SUPPORT == 1 || RTL8197G_SUPPORT == 1 ||\
-	RTL8710C_SUPPORT == 1)
+	RTL8812F_SUPPORT == 1 || RTL8197G_SUPPORT == 1 )
 	u32 iqk_channel[2];
 	boolean iqk_fail_report[2][4][2]; /*channel/path/TRX(TX:0, RX:1) */
 	/*channel / path / TRX(TX:0, RX:1) / CFIR_real*/

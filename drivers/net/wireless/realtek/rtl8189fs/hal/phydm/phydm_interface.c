@@ -136,9 +136,6 @@ void odm_write_1byte(struct dm_struct *dm, u32 reg_addr, u8 data)
 
 	rtw_write8(adapter, reg_addr, data);
 #endif
-
-	if (dm->en_reg_mntr_byte)
-		pr_debug("1byte:addr=0x%x, data=0x%x\n", reg_addr, data);
 }
 
 void odm_write_2byte(struct dm_struct *dm, u32 reg_addr, u16 data)
@@ -165,9 +162,6 @@ void odm_write_2byte(struct dm_struct *dm, u32 reg_addr, u16 data)
 
 	rtw_write16(adapter, reg_addr, data);
 #endif
-
-	if (dm->en_reg_mntr_byte)
-		pr_debug("2byte:addr=0x%x, data=0x%x\n", reg_addr, data);
 }
 
 void odm_write_4byte(struct dm_struct *dm, u32 reg_addr, u32 data)
@@ -194,9 +188,6 @@ void odm_write_4byte(struct dm_struct *dm, u32 reg_addr, u32 data)
 
 	rtw_write32(adapter, reg_addr, data);
 #endif
-
-	if (dm->en_reg_mntr_byte)
-		pr_debug("4byte:addr=0x%x, data=0x%x\n", reg_addr, data);
 }
 
 void odm_set_mac_reg(struct dm_struct *dm, u32 reg_addr, u32 bit_mask, u32 data)
@@ -219,10 +210,6 @@ void odm_set_mac_reg(struct dm_struct *dm, u32 reg_addr, u32 bit_mask, u32 data)
 #else
 	phy_set_bb_reg(dm->adapter, reg_addr, bit_mask, data);
 #endif
-
-	if (dm->en_reg_mntr_mac)
-		pr_debug("MAC:addr=0x%x, mask=0x%x, data=0x%x\n",
-			 reg_addr, bit_mask, data);
 }
 
 u32 odm_get_mac_reg(struct dm_struct *dm, u32 reg_addr, u32 bit_mask)
@@ -266,10 +253,6 @@ void odm_set_bb_reg(struct dm_struct *dm, u32 reg_addr, u32 bit_mask, u32 data)
 #else
 	phy_set_bb_reg(dm->adapter, reg_addr, bit_mask, data);
 #endif
-
-	if (dm->en_reg_mntr_bb)
-		pr_debug("BB:addr=0x%x, mask=0x%x, data=0x%x\n",
-			 reg_addr, bit_mask, data);
 }
 
 u32 odm_get_bb_reg(struct dm_struct *dm, u32 reg_addr, u32 bit_mask)
@@ -318,10 +301,6 @@ void odm_set_rf_reg(struct dm_struct *dm, u8 e_rf_path, u32 reg_addr,
 	phy_set_rf_reg(dm->adapter, e_rf_path, reg_addr, bit_mask, data);
 	ODM_delay_us(2);
 #endif
-
-	if (dm->en_reg_mntr_rf)
-		pr_debug("RF:path=0x%x, addr=0x%x, mask=0x%x, data=0x%x\n",
-			 e_rf_path, reg_addr, bit_mask, data);
 }
 
 u32 odm_get_rf_reg(struct dm_struct *dm, u8 e_rf_path, u32 reg_addr,
@@ -1263,23 +1242,11 @@ odm_iq_calibrate_by_fw(struct dm_struct *dm, u8 clear, u8 segment)
 	return iqk_result;
 }
 
-enum hal_status
-odm_dpk_by_fw(struct dm_struct *dm)
+void odm_cmn_info_ptr_array_hook(struct dm_struct *dm,
+				 enum odm_cmninfo cmn_info, u16 index,
+				 void *value)
 {
-	enum hal_status dpk_result = HAL_STATUS_FAILURE;
-#if 0
-
-#if (DM_ODM_SUPPORT_TYPE & ODM_WIN)
-	struct _ADAPTER *adapter = dm->adapter;
-
-	if (HAL_MAC_FWDPK_Trigger(&GET_HAL_MAC_INFO(adapter)) == 0)
-		dpk_result = HAL_STATUS_SUCCESS;
-#else
-	dpk_result = rtw_phydm_fw_dpk(dm);
-#endif
-
-#endif
-	return dpk_result;
+	/*ODM_CMNINFO_STA_STATUS*/
 }
 
 void phydm_cmn_sta_info_hook(struct dm_struct *dm, u8 mac_id,
@@ -1506,14 +1473,6 @@ u8 phydm_get_tx_power_dbm(struct dm_struct *dm, u8 rf_path,
 #if (DM_ODM_SUPPORT_TYPE == ODM_WIN)
 	struct _ADAPTER *adapter = dm->adapter;
 	tx_power_dbm = PHY_GetTxPowerFinalAbsoluteValue(adapter, rf_path, rate, bandwidth, channel);
-#endif
-
-#if (DM_ODM_SUPPORT_TYPE == ODM_CE)
-	tx_power_dbm = phy_get_tx_power_final_absolute_value(dm->adapter, rf_path, rate, bandwidth, channel);
-#endif
-
-#if (DM_ODM_SUPPORT_TYPE == ODM_AP)
-	tx_power_dbm = PHY_GetTxPowerFinalAbsoluteValue(dm, rf_path, rate, bandwidth, channel);
 #endif
 	return tx_power_dbm;
 }

@@ -278,7 +278,7 @@ void phydm_set_mac_phy_txinfo_jgr3(void *dm_void,
 	odm_set_bb_reg(dm, R_0x900, 0x2, tx_info->ndp_sound);
 
 	/* @0x900[27:24] txsc [29:28] bw [31:30] m_stbc */
-	if (dm->support_ic_type & (ODM_RTL8812F | ODM_RTL8197G)) {
+	if (dm->support_ic_type & ODM_RTL8812F) {
 		tmp = (tx_info->tx_sc) | ((tx_info->bw) << 4) |
 			((tx_info->m_stbc) << 6);
 	} else {

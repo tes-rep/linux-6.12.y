@@ -1,6 +1,6 @@
 /******************************************************************************
  *
- * Copyright(c) 2015 - 2018 Realtek Corporation.
+ * Copyright(c) 2015 - 2019 Realtek Corporation.
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of version 2 of the GNU General Public License as
@@ -116,9 +116,6 @@ int rtw_halmac_write32(struct intf_hdl *, u32 addr, u32 value);
 /* Software Information */
 void rtw_halmac_get_version(char *str, u32 len);
 
-/* Software setting before Initialization */
-int rtw_halmac_preinit_sdio_io_indirect(struct dvobj_priv *d, bool enable);
-
 /* Software Initialization */
 int rtw_halmac_init_adapter(struct dvobj_priv *d, struct halmac_platform_api *pf_api);
 int rtw_halmac_deinit_adapter(struct dvobj_priv *);
@@ -134,7 +131,6 @@ int rtw_halmac_get_rx_agg_align_size(struct dvobj_priv *d, u8 *size);
 int rtw_halmac_get_rx_drv_info_sz(struct dvobj_priv *, u8 *sz);
 int rtw_halmac_get_tx_desc_size(struct dvobj_priv *d, u32 *size);
 int rtw_halmac_get_rx_desc_size(struct dvobj_priv *d, u32 *size);
-int rtw_halmac_get_tx_dma_ch_map(struct dvobj_priv *d, u8 *dma_ch_map, u8 map_size);
 int rtw_halmac_get_ori_h2c_size(struct dvobj_priv *d, u32 *size);
 int rtw_halmac_get_oqt_size(struct dvobj_priv *d, u8 *size);
 int rtw_halmac_get_ac_queue_number(struct dvobj_priv *d, u8 *num);

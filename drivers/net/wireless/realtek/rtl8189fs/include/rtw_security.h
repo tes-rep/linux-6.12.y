@@ -73,8 +73,8 @@ typedef enum {
 union pn48	{
 
 	u64	val;
-	
-#ifdef __LITTLE_ENDIAN
+
+#ifdef CONFIG_LITTLE_ENDIAN
 
 struct {
 	u8 TSC0;
@@ -87,7 +87,7 @@ struct {
 	u8 TSC7;
 } _byte_;
 
-#else
+#elif defined(CONFIG_BIG_ENDIAN)
 
 struct {
 	u8 TSC7;
@@ -176,9 +176,6 @@ struct security_priv {
 	u8	bcheck_grpkey;
 	u8	bgrpkey_handshake;
 
-	u8	auth_alg;
-	u8	auth_type;
-	u8	extauth_status;
 	/* u8	packet_cnt; */ /* unused, removed */
 
 	s32	sw_encrypt;/* from registry_priv */
@@ -493,11 +490,5 @@ u8 rtw_handle_tkip_countermeasure(_adapter *adapter, const char *caller);
 #ifdef CONFIG_WOWLAN
 u16 rtw_calc_crc(u8  *pdata, int length);
 #endif /*CONFIG_WOWLAN*/
-
-#define rtw_sec_chk_auth_alg(a, s) \
-	((a)->securitypriv.auth_alg == (s))
-
-#define rtw_sec_chk_auth_type(a, s) \
-	((a)->securitypriv.auth_type == (s))
 
 #endif /* __RTL871X_SECURITY_H_ */

@@ -778,6 +778,9 @@ u16 rtw_get_cur_max_rate(_adapter *adapter)
 	unsigned char	sta_bssrate[NumRates];
 	struct sta_info *psta = NULL;
 	u8	short_GI = 0;
+#ifdef CONFIG_80211N_HT
+	u8	rf_type = 0;
+#endif
 
 #ifdef CONFIG_MP_INCLUDED
 	if (adapter->registrypriv.mp_mode == 1) {
@@ -798,7 +801,9 @@ u16 rtw_get_cur_max_rate(_adapter *adapter)
 
 #ifdef CONFIG_80211N_HT
 	if (is_supported_ht(psta->wireless_mode)) {
-		max_rate = rtw_ht_mcs_rate((psta->cmn.bw_mode == CHANNEL_WIDTH_40) ? 1 : 0
+		rtw_hal_get_hwreg(adapter, HW_VAR_RF_TYPE, (u8 *)(&rf_type));
+		max_rate = rtw_mcs_rate(rf_type
+			, (psta->cmn.bw_mode == CHANNEL_WIDTH_40) ? 1 : 0
 			, short_GI
 			, psta->htpriv.ht_cap.supp_mcs_set
 		);

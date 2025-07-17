@@ -30,11 +30,9 @@
 #define GAIN_LOSS 1
 #define DO_DPK 2
 #define DPK_ON 3
-#define GAIN_LOSS_PULSE 4
-#define DPK_PAS 5
-#define DPK_LMS 6
 #define DPK_LOK 4
 #define DPK_TXK 5
+
 #define DAGC 4
 #define LOSS_CHK 0
 #define GAIN_CHK 1
@@ -57,8 +55,8 @@ struct dm_dpk_info {
 	/*@BIT(7)~BIT(4) : 2G reserved, BIT(3)~BIT(0) 2G_S3~2G_S0*/
 	u8	thermal_dpk[4];					/*path*/	
 	u8	thermal_dpk_avg[4][AVG_THERMAL_NUM_DPK];	/*path*/
-	u8	pre_pwsf[4];	
 	u8	thermal_dpk_avg_index;
+	u8	pre_pwsf[4];
 	u32	gnt_control;
 	u32	gnt_value;
 	u8	dpk_ch;
@@ -73,15 +71,12 @@ struct dm_dpk_info {
 	u8	thermal_dpk_delta[2];		/*path*/
 #endif
 
-#if (RTL8198F_SUPPORT == 1 || RTL8192F_SUPPORT == 1 || RTL8197F_SUPPORT == 1 ||\
-     RTL8814B_SUPPORT == 1 || RTL8197G_SUPPORT == 1)
+#if (RTL8198F_SUPPORT == 1 || RTL8192F_SUPPORT == 1 || RTL8197F_SUPPORT == 1 || RTL8814B_SUPPORT)
 	/*2G DPK data*/
 	u8 	dpk_result[4][3];		/*path/group*/
 	u8 	pwsf_2g[4][3];			/*path/group*/	
 	u32	lut_2g_even[4][3][64];		/*path/group/LUT data*/
 	u32	lut_2g_odd[4][3][64];		/*path/group/LUT data*/
-	s16	tmp_pas_i[32];			/*PAScan I data*/
-	s16	tmp_pas_q[32];			/*PAScan Q data*/
 	/*5G DPK data*/
 	u8	dpk_5g_result[4][6];		/*path/group*/
 	u8	pwsf_5g[4][6];			/*path/group*/
@@ -104,20 +99,6 @@ struct dm_dpk_info {
 		u8	pwsf_5g[1][13];			/*path/group*/
 		u32	lut_5g_even[1][13][16];		/*path/group/LUT data*/
 		u32	lut_5g_odd[1][13][16];		/*path/group/LUT data*/
-#endif
-
-#if (RTL8721D_SUPPORT == 1)
-		u8	dpk_txagc;
-		/*2G DPK data*/
-		u8	dpk_2g_result[1][3];		/*path/group*/
-		u8	pwsf_2g[1][3];			/*path/group*/
-		u32	lut_2g_even[1][3][16];		/*path/group/LUT data*/
-		u32	lut_2g_odd[1][3][16];		/*path/group/LUT data*/
-		/*5G DPK data*/
-		u8	dpk_5g_result[1][6];		/*path/group*/
-		u8	pwsf_5g[1][6];			/*path/group*/
-		u32	lut_5g_even[1][6][16];		/*path/group/LUT data*/
-		u32	lut_5g_odd[1][6][16];		/*path/group/LUT data*/
 #endif
 
 };

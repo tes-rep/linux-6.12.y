@@ -26,13 +26,16 @@
 #ifndef __PHYDMCCX_H__
 #define __PHYDMCCX_H__
 
-/* 2019.03.27 add noise_pwr in env_mntr_rpt.*/
-#define CCX_VERSION "2.4"
+#define CCX_VERSION "1.4" /* @ Remove r0 chk*/
 
 /* @1 ============================================================
  * 1  Definition
  * 1 ============================================================
  */
+#define	ENV_MNTR_DBG	0	/*@debug for the HW processing time from NHM/CLM trigger and get result*/
+#define	ENV_MNTR_DBG_1	0	/*@debug 8812A & 8821A P2P Fail to get result*/
+#define	ENV_MNTR_DBG_2	0	/*@debug for read reister*/
+
 #define CCX_EN 1
 
 #define	MAX_ENV_MNTR_TIME	8	/*second*/
@@ -46,7 +49,7 @@
 #define	NHM_TH_NUM		11	/*threshold number of NHM*/
 #define	NHM_RPT_NUM		12
 #ifdef NHM_DYM_PW_TH_SUPPORT
-#define	DYM_PWTH_CCA_CAP	24
+#define	DYM_PWTH_CCA_CAP	25
 #define NHM_1PEAK_PS		1	/* @case1 : positive skew*/
 #define NHM_1PEAK_NS		2	/* @case2 : negative skew*/
 #define NHM_1PEAK_SYM		3	/* @case3 : symmetry*/
@@ -152,7 +155,6 @@ struct env_mntr_rpt {
 	u8			clm_ratio;
 	u8			nhm_rpt_stamp;
 	u8			clm_rpt_stamp;
-	u8			nhm_noise_pwr;
 };
 
 struct nhm_para_info {
@@ -162,6 +164,7 @@ struct nhm_para_info {
 	enum nhm_application		nhm_app;
 	enum phydm_nhm_level		nhm_lv;
 	u16				mntr_time;	/*@0~262 unit ms*/
+
 };
 
 struct clm_para_info {
@@ -191,12 +194,9 @@ struct ccx_info {
 	u8			nhm_set_lv;
 	boolean			nhm_ongoing;
 	u8			nhm_rpt_stamp;
-	u8			nhm_noise_pwr;
-	u8			nhm_noise_pwr_point;
 #ifdef NHM_DYM_PW_TH_SUPPORT
 	boolean			nhm_dym_pw_th_en;
 	boolean			nhm_dym_1_peak_en;
-	boolean			dym_pwth_manual_ctrl;
 	u8			nhm_pw_th_rf20_dft;
 	u8			nhm_pw_th_max;
 	u8			nhm_period_decre;
@@ -232,14 +232,20 @@ struct ccx_info {
  */
 
 #ifdef FAHM_SUPPORT
+
 void phydm_fahm_init(void *dm_void);
 
 void phydm_fahm_dbg(void *dm_void, char input[][16], u32 *_used, char *output,
 		    u32 *_out_len);
+
 #endif
 
 /*@NHM*/
 #ifdef NHM_SUPPORT
+void phydm_nhm_trigger(void *dm_void);
+
+void phydm_nhm_init(void *dm_void);
+
 void phydm_nhm_dbg(void *dm_void, char input[][16], u32 *_used, char *output,
 		   u32 *_out_len);
 u8 phydm_get_igi(void *dm_void, enum bb_path path);
@@ -248,6 +254,22 @@ u8 phydm_get_igi(void *dm_void, enum bb_path path);
 /*@CLM*/
 #ifdef CLM_SUPPORT
 void phydm_clm_c2h_report_handler(void *dm_void, u8 *cmd_buf, u8 cmd_len);
+
+void phydm_clm_h2c(void *dm_void, u16 obs_time, u8 fw_clm_en);
+
+void phydm_clm_setting(void *dm_void, u16 clm_period);
+
+void phydm_clm_trigger(void *dm_void);
+
+boolean phydm_clm_check_rdy(void *dm_void);
+
+void phydm_clm_get_utility(void *dm_void);
+
+boolean phydm_clm_get_result(void *dm_void);
+
+u8 phydm_clm_mntr_set(void *dm_void, struct clm_para_info *clm_para);
+
+void phydm_set_clm_mntr_mode(void *dm_void, enum clm_monitor_mode mode);
 
 void phydm_clm_dbg(void *dm_void, char input[][16], u32 *_used, char *output,
 		   u32 *_out_len);
@@ -265,4 +287,5 @@ void phydm_env_monitor_init(void *dm_void);
 
 void phydm_env_mntr_dbg(void *dm_void, char input[][16], u32 *_used,
 			char *output, u32 *_out_len);
+
 #endif

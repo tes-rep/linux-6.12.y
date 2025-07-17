@@ -456,7 +456,7 @@ __inline static int IS_MCAST(const u8 *da)
 		return _FALSE;
 }
 
-__inline static unsigned char *rtl_get_ra(unsigned char *pframe)
+__inline static unsigned char *get_ra(unsigned char *pframe)
 {
 	unsigned char	*ra;
 	ra = GetAddr1Ptr(pframe);
@@ -658,7 +658,6 @@ typedef	enum _ELEMENT_ID {
 	/* vivi for WIFITest, 802.11h AP, 20100427 */
 	/* 2010/12/26 MH The definition we can declare always!! */
 	EID_PowerCap				= 33,
-	EID_TPC				= 35,
 	EID_SupportedChannels		= 36,
 	EID_ChlSwitchAnnounce		= 37,
 

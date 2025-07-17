@@ -1,6 +1,6 @@
 /******************************************************************************
  *
- * Copyright(c) 2007 - 2019 Realtek Corporation.
+ * Copyright(c) 2007 - 2017 Realtek Corporation.
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of version 2 of the GNU General Public License as
@@ -42,7 +42,7 @@ const char *rtw_log_level_str[] = {
 void dump_drv_version(void *sel)
 {
 	RTW_PRINT_SEL(sel, "%s %s\n", DRV_NAME, DRIVERVERSION);
-	//RTW_PRINT_SEL(sel, "build time: %s %s\n", __DATE__, __TIME__);
+	RTW_PRINT_SEL(sel, "build time: %s %s\n", __DATE__, __TIME__);
 }
 
 void dump_drv_cfg(void *sel)
@@ -78,24 +78,6 @@ void dump_drv_cfg(void *sel)
 
 #ifdef CONFIG_POWER_SAVING
 	RTW_PRINT_SEL(sel, "CONFIG_POWER_SAVING\n");
-	#ifdef CONFIG_IPS
-	RTW_PRINT_SEL(sel, "CONFIG_IPS\n");
-	#endif
-	#ifdef CONFIG_LPS
-		RTW_PRINT_SEL(sel, "CONFIG_LPS\n");
-		#ifdef CONFIG_LPS_LCLK
-		RTW_PRINT_SEL(sel, "CONFIG_LPS_LCLK\n");
-		#ifdef CONFIG_DETECT_CPWM_BY_POLLING
-		RTW_PRINT_SEL(sel, "CONFIG_DETECT_CPWM_BY_POLLING\n");
-		#endif
-		#endif /*CONFIG_LPS_LCLK*/
-		#ifdef CONFIG_LPS_CHK_BY_TP
-		RTW_PRINT_SEL(sel, "CONFIG_LPS_CHK_BY_TP\n");
-		#endif
-		#ifdef CONFIG_LPS_ACK
-		RTW_PRINT_SEL(sel, "CONFIG_LPS_ACK\n");
-		#endif
-	#endif/*CONFIG_LPS*/
 #endif
 
 #ifdef CONFIG_LOAD_PHY_PARA_FROM_FILE
@@ -201,10 +183,6 @@ void dump_drv_cfg(void *sel)
 #ifdef RTW_XMIT_THREAD_HIGH_PRIORITY_AGG
 	RTW_PRINT_SEL(sel, "RTW_XMIT_THREAD_HIGH_PRIORITY_AGG\n");
 #endif
-
-#ifdef DBG_SDIO
-	RTW_PRINT_SEL(sel, "DBG_SDIO = %d\n", DBG_SDIO);
-#endif
 #endif /*CONFIG_SDIO_HCI*/
 
 #ifdef CONFIG_PCI_HCI
@@ -227,7 +205,6 @@ void dump_drv_cfg(void *sel)
 #ifdef CONFIG_PCI_TX_POLLING
 	RTW_PRINT_SEL(sel, "CONFIG_PCI_TX_POLLING\n");
 #endif
-	RTW_PRINT_SEL(sel, "CONFIG_RTW_UP_MAPPING_RULE = %s\n", (CONFIG_RTW_UP_MAPPING_RULE == 1) ? "dscp" : "tos");
 
 	RTW_PRINT_SEL(sel, "\n=== XMIT-INFO ===\n");
 	RTW_PRINT_SEL(sel, "NR_XMITFRAME = %d\n", NR_XMITFRAME);
@@ -318,7 +295,7 @@ void mac_reg_dump(void *sel, _adapter *adapter)
 	}
 #endif /* CONFIG_RTL8814A */
 
-#if defined(CONFIG_RTL8822B) || defined(CONFIG_RTL8821C) ||defined(CONFIG_RTL8192F) || defined(CONFIG_RTL8822C) || defined(CONFIG_RTL8814B)
+#if defined(CONFIG_RTL8822B) || defined(CONFIG_RTL8821C) ||defined(CONFIG_RTL8192F) || defined(CONFIG_RTL8822C)
 	for (i = 0x1000; i < 0x1800; i += 4) {
 		if (j % 4 == 1)
 			RTW_PRINT_SEL(sel, "0x%04x", i);
@@ -327,24 +304,6 @@ void mac_reg_dump(void *sel, _adapter *adapter)
 			_RTW_PRINT_SEL(sel, "\n");
 	}
 #endif /* CONFIG_RTL8822B  or 8821c or 8192f*/
-
-#if defined(CONFIG_RTL8814B)
-	for (i = 0x2000; i < 0x2800; i += 4) {
-		if (j % 4 == 1)
-			RTW_PRINT_SEL(sel, "0x%04x", i);
-		_RTW_PRINT_SEL(sel, " 0x%08x ", rtw_read32(adapter, i));
-		if ((j++) % 4 == 0)
-			_RTW_PRINT_SEL(sel, "\n");
-	}
-
-	for (i = 0x3000; i < 0x3800; i += 4) {
-		if (j % 4 == 1)
-			RTW_PRINT_SEL(sel, "0x%04x", i);
-		_RTW_PRINT_SEL(sel, " 0x%08x ", rtw_read32(adapter, i));
-		if ((j++) % 4 == 0)
-			_RTW_PRINT_SEL(sel, "\n");
-	}
-#endif
 
 }
 
@@ -361,7 +320,7 @@ void bb_reg_dump(void *sel, _adapter *adapter)
 			_RTW_PRINT_SEL(sel, "\n");
 	}
 
-#if defined(CONFIG_RTL8822B) || defined(CONFIG_RTL8821C) || defined(CONFIG_RTL8822C) || defined(CONFIG_RTL8814B)
+#if defined(CONFIG_RTL8822B) || defined(CONFIG_RTL8821C) || defined(CONFIG_RTL8822C)
 	for (i = 0x1800; i < 0x2000; i += 4) {
 		if (j % 4 == 1)
 			RTW_PRINT_SEL(sel, "0x%04x", i);
@@ -371,7 +330,7 @@ void bb_reg_dump(void *sel, _adapter *adapter)
 	}
 #endif /* CONFIG_RTL8822B */
 
-#if defined(CONFIG_RTL8822C) || defined(CONFIG_RTL8814B)
+#if defined(CONFIG_RTL8822C)
 	for (i = 0x2c00; i < 0x2c60; i += 4) {
 		if (j % 4 == 1)
 			RTW_PRINT_SEL(sel, "0x%04x", i);
@@ -404,17 +363,8 @@ void bb_reg_dump(void *sel, _adapter *adapter)
 			_RTW_PRINT_SEL(sel, "\n");
 	}	
 
-#endif /* CONFIG_RTL8822C || CONFIG_RTL8814B */
+#endif /* CONFIG_RTL8822C */
 
-#if defined(CONFIG_RTL8814B)
-	for (i = 0x5200; i < 0x5400; i += 4) {
-		if (j % 4 == 1)
-			RTW_PRINT_SEL(sel, "0x%04x", i);
-		_RTW_PRINT_SEL(sel, " 0x%08x ", rtw_read32(adapter, i));
-		if ((j++) % 4 == 0)
-			_RTW_PRINT_SEL(sel, "\n");
-	}
-#endif /* CONFIG_RTL8814B */
 }
 
 void bb_reg_dump_ex(void *sel, _adapter *adapter)
@@ -428,7 +378,7 @@ void bb_reg_dump_ex(void *sel, _adapter *adapter)
 		_RTW_PRINT_SEL(sel, "\n");
 	}
 
-#if defined(CONFIG_RTL8822B) || defined(CONFIG_RTL8821C) || defined(CONFIG_RTL8822C) || defined(CONFIG_RTL8814B)
+#if defined(CONFIG_RTL8822B) || defined(CONFIG_RTL8821C) || defined(CONFIG_RTL8822C)
 	for (i = 0x1800; i < 0x2000; i += 4) {
 		RTW_PRINT_SEL(sel, "0x%04x", i);
 		_RTW_PRINT_SEL(sel, " 0x%08x ", rtw_read32(adapter, i));
@@ -439,9 +389,11 @@ void bb_reg_dump_ex(void *sel, _adapter *adapter)
 
 void rf_reg_dump(void *sel, _adapter *adapter)
 {
+	HAL_DATA_TYPE *hal = GET_HAL_DATA(adapter);
 	int i, j = 1, path;
 	u32 value;
-	u8 path_nums = GET_HAL_RFPATH_NUM(adapter);
+	u8 rf_type = 0;
+	u8 path_nums = hal->NumTotalRFPath;
 
 	RTW_PRINT_SEL(sel, "======= RF REG =======\n");
 
@@ -465,15 +417,8 @@ void rtw_sink_rtp_seq_dbg(_adapter *adapter, u8 *ehdr_pos)
 		if (*((u16 *)(ehdr_pos + 0x24)) == cpu_to_be16(precvpriv->sink_udpport)) {
 			precvpriv->pre_rtp_rxseq = precvpriv->cur_rtp_rxseq;
 			precvpriv->cur_rtp_rxseq = be16_to_cpu(*((u16 *)(ehdr_pos + 0x2C)));
-			if (precvpriv->pre_rtp_rxseq + 1 != precvpriv->cur_rtp_rxseq) {
-				if(precvpriv->pre_rtp_rxseq == 65535 ) {
-					if( precvpriv->cur_rtp_rxseq != 0) {
-						RTW_INFO("%s : RTP Seq num from %d to %d\n", __FUNCTION__, precvpriv->pre_rtp_rxseq, precvpriv->cur_rtp_rxseq);
-					}
-				} else {
-					RTW_INFO("%s : RTP Seq num from %d to %d\n", __FUNCTION__, precvpriv->pre_rtp_rxseq, precvpriv->cur_rtp_rxseq);
-				}
-			}	
+			if (precvpriv->pre_rtp_rxseq + 1 != precvpriv->cur_rtp_rxseq)
+				RTW_INFO("%s : RTP Seq num from %d to %d\n", __FUNCTION__, precvpriv->pre_rtp_rxseq, precvpriv->cur_rtp_rxseq);
 		}
 	}
 }
@@ -501,7 +446,7 @@ void dump_tx_rate_bmp(void *sel, struct dvobj_priv *dvobj)
 
 	RTW_PRINT_SEL(sel, "%-6s", "bw");
 	if (hal_chk_proto_cap(adapter, PROTO_CAP_11AC))
-		_RTW_PRINT_SEL(sel, " %-15s", "vht");
+		_RTW_PRINT_SEL(sel, " %-11s", "vht");
 
 	_RTW_PRINT_SEL(sel, " %-11s %-4s %-3s\n", "ht", "ofdm", "cck");
 
@@ -511,8 +456,7 @@ void dump_tx_rate_bmp(void *sel, struct dvobj_priv *dvobj)
 
 		RTW_PRINT_SEL(sel, "%6s", ch_width_str(bw));
 		if (hal_chk_proto_cap(adapter, PROTO_CAP_11AC)) {
-			_RTW_PRINT_SEL(sel, " %03x %03x %03x %03x"
-				, RATE_BMP_GET_VHT_4SS(rfctl->rate_bmp_vht_by_bw[bw])
+			_RTW_PRINT_SEL(sel, " %03x %03x %03x"
 				, RATE_BMP_GET_VHT_3SS(rfctl->rate_bmp_vht_by_bw[bw])
 				, RATE_BMP_GET_VHT_2SS(rfctl->rate_bmp_vht_by_bw[bw])
 				, RATE_BMP_GET_VHT_1SS(rfctl->rate_bmp_vht_by_bw[bw])
@@ -690,10 +634,11 @@ void dump_adapters_status(void *sel, struct dvobj_priv *dvobj)
 		P2P_INFO_DASH
 		"-------\n");
 
-	if (rtw_mi_get_ch_setting_union(dvobj_get_primary_adapter(dvobj), &u_ch, &u_bw, &u_offset))
-		RTW_PRINT_SEL(sel, "%55s %3u,%u,%u\n"
-			, "union:"
-			, u_ch, u_bw, u_offset);
+	rtw_mi_get_ch_setting_union(dvobj_get_primary_adapter(dvobj), &u_ch, &u_bw, &u_offset);
+	RTW_PRINT_SEL(sel, "%55s %3u,%u,%u\n"
+		, "union:"
+		, u_ch, u_bw, u_offset
+	);
 
 	RTW_PRINT_SEL(sel, "%55s %3u,%u,%u offch_state:%d\n"
 		, "oper:"
@@ -1804,26 +1749,6 @@ int proc_get_infra_ap(struct seq_file *m, void *v)
 
 #endif /* ROKU_PRIVATE */
 
-static int wireless_mode_to_str(u32 mode, char *str)
-{
-	str[0]='\0';
-	if (mode&WIRELESS_11A)
-		sprintf(str+strlen(str),"%s","A/");
-	if (mode&WIRELESS_11B)
-		sprintf(str+strlen(str),"%s","B/");
-	if (mode&WIRELESS_11G)
-		sprintf(str+strlen(str),"%s","G/");
-	if (mode&(WIRELESS_11_24N|WIRELESS_11_5N))
-		sprintf(str+strlen(str),"%s","N/");
-	if (mode&WIRELESS_11AC)
-		sprintf(str+strlen(str),"%s","AC/");
-
-	if (strlen(str)>1)
-		str[strlen(str)-1]='\0';
-
-	return strlen(str);
-}
-
 int proc_get_ap_info(struct seq_file *m, void *v)
 {
 	struct net_device *dev = m->private;
@@ -1834,7 +1759,6 @@ int proc_get_ap_info(struct seq_file *m, void *v)
 	struct wlan_network *cur_network = &(pmlmepriv->cur_network);
 	struct mlme_ext_info	*pmlmeinfo = &(pmlmeext->mlmext_info);
 	struct sta_priv *pstapriv = &padapter->stapriv;
-	char wl_mode[16];
 
 	/* ap vendor */
 	char vendor[VENDOR_NAME_LEN] = {0};
@@ -1843,11 +1767,10 @@ int proc_get_ap_info(struct seq_file *m, void *v)
 
 	psta = rtw_get_stainfo(pstapriv, cur_network->network.MacAddress);
 	if (psta) {
-		wireless_mode_to_str(psta->wireless_mode, wl_mode);
 		RTW_PRINT_SEL(m, "SSID=%s\n", cur_network->network.Ssid.Ssid);
 		RTW_PRINT_SEL(m, "sta's macaddr:" MAC_FMT "\n", MAC_ARG(psta->cmn.mac_addr));
-		RTW_PRINT_SEL(m, "cur_channel=%d, cur_bwmode=%d(%s), cur_ch_offset=%d\n", pmlmeext->cur_channel, pmlmeext->cur_bwmode, ch_width_str(pmlmeext->cur_bwmode), pmlmeext->cur_ch_offset);
-		RTW_PRINT_SEL(m, "wireless_mode=0x%x(%s), rtsen=%d, cts2slef=%d\n", psta->wireless_mode, wl_mode, psta->rtsen, psta->cts2self);
+		RTW_PRINT_SEL(m, "cur_channel=%d, cur_bwmode=%d, cur_ch_offset=%d\n", pmlmeext->cur_channel, pmlmeext->cur_bwmode, pmlmeext->cur_ch_offset);
+		RTW_PRINT_SEL(m, "wireless_mode=0x%x, rtsen=%d, cts2slef=%d\n", psta->wireless_mode, psta->rtsen, psta->cts2self);
 		RTW_PRINT_SEL(m, "state=0x%x, aid=%d, macid=%d, raid=%d\n",
 			psta->state, psta->cmn.aid, psta->cmn.mac_id, psta->cmn.ra_info.rate_id);
 #ifdef CONFIG_80211N_HT
@@ -2898,14 +2821,13 @@ ssize_t proc_set_rx_signal(struct file *file, const char __user *buffer, size_t 
 
 int proc_get_mac_rptbuf(struct seq_file *m, void *v)
 {
-#ifdef CONFIG_RTL8814A
 	struct net_device *dev = m->private;
 	_adapter *padapter = (_adapter *)rtw_netdev_priv(dev);
 	u16 i;
 	u16 mac_id;
 	u32 shcut_addr = 0;
 	u32 read_addr = 0;
-
+#ifdef CONFIG_RTL8814A
 	RTW_PRINT_SEL(m, "TX ShortCut:\n");
 	for (mac_id = 0; mac_id < 64; mac_id++) {
 		rtw_write16(padapter, 0x140, 0x662 | ((mac_id & BIT5) >> 5));
@@ -4089,7 +4011,7 @@ int proc_get_btcoex_info(struct seq_file *m, void *v)
 {
 	struct net_device *dev = m->private;
 	PADAPTER padapter;
-	const u32 bufsize = 40 * 100;
+	const u32 bufsize = 30 * 100;
 	u8 *pbuf = NULL;
 
 	padapter = (PADAPTER)rtw_netdev_priv(dev);
@@ -4426,12 +4348,6 @@ int proc_get_pci_aspm(struct seq_file *m, void *v)
 	RTW_PRINT_SEL(m, "ASPM L1 Idel Time: 0x%x\n", l1_idle>>3);
 	RTW_PRINT_SEL(m, "*************************\n");
 
-#ifdef CONFIG_PCI_DYNAMIC_ASPM
-	RTW_PRINT_SEL(m, "Dynamic ASPM mode: %d (%s)\n", pcipriv->aspm_mode,
-		      pcipriv->aspm_mode == ASPM_MODE_PERF ? "Perf" :
-		      pcipriv->aspm_mode == ASPM_MODE_PS ? "PS" : "Und");
-#endif
-
 	return 0;
 }
 
@@ -4674,7 +4590,8 @@ int proc_get_pattern_info(struct seq_file *m, void *v)
 	struct net_device *dev = m->private;
 	_adapter *padapter = (_adapter *)rtw_netdev_priv(dev);
 	struct pwrctrl_priv *pwrpriv = adapter_to_pwrctl(padapter);
-	u8 val8;
+	struct registry_priv *pregistrypriv = &padapter->registrypriv;
+	u8 pattern_num = 0, val8;
 	char str_1[128];
 	char *p_str;
 	int i = 0 , j = 0, k = 0;
@@ -4736,8 +4653,8 @@ ssize_t proc_set_pattern_info(struct file *file, const char __user *buffer,
 	_adapter *padapter = (_adapter *)rtw_netdev_priv(dev);
 	struct pwrctrl_priv *pwrpriv = adapter_to_pwrctl(padapter);
 	struct wowlan_ioctl_param poidparam;
-	u8 tmp[MAX_WKFM_PATTERN_STR_LEN + 1] = {0};
-	int ret = 0;
+	u8 tmp[MAX_WKFM_PATTERN_SIZE] = {0};
+	int ret = 0, num = 0;
 	u8 index = 0;
 
 	poidparam.subcode = 0;
@@ -4745,16 +4662,15 @@ ssize_t proc_set_pattern_info(struct file *file, const char __user *buffer,
 	if (count < 1)
 		return -EFAULT;
 
-	if (count >= sizeof(tmp)) {
-		RTW_ERR("%s: pattern string is too long, count=%zu\n",
-			__func__, count);
+	if (count > sizeof(tmp)) {
+		rtw_warn_on(1);
 		return -EFAULT;
 	}
 
 	if (pwrpriv->wowlan_pattern_idx >= MAX_WKFM_CAM_NUM) {
-		RTW_ERR("priv-pattern is full(idx: %d)\n",
+		RTW_INFO("WARNING: priv-pattern is full(idx: %d)\n",
 			 pwrpriv->wowlan_pattern_idx);
-		RTW_ERR("please clean priv-pattern first\n");
+		RTW_INFO("WARNING: please clean priv-pattern first\n");
 		return -ENOMEM;
 	}
 
@@ -4772,9 +4688,6 @@ ssize_t proc_set_pattern_info(struct file *file, const char __user *buffer,
 			if (ret == _TRUE)
 				pwrpriv->wowlan_pattern_idx++;
 		}
-	} else {
-		rtw_warn_on(1);
-		return -EFAULT;
 	}
 
 	return count;
@@ -4800,7 +4713,8 @@ ssize_t proc_set_wakeup_event(struct file *file, const char __user *buffer,
 	u32 wakeup_event = 0;
 
 	u8 tmp[8] = {0};
-	int num = 0;
+	int ret = 0, num = 0;
+	u8 index = 0;
 
 	if (count < 1)
 		return -EFAULT;
@@ -5088,6 +5002,7 @@ ssize_t proc_set_ps_info(struct file *file, const char __user *buffer, size_t co
 {
 	struct net_device *dev = data;
 	struct _ADAPTER *adapter = (_adapter *)rtw_netdev_priv(dev);
+	struct dvobj_priv *dvobj = adapter_to_dvobj(adapter);
 	char tmp[8];
 	int num = 0;
 	int mode = 0;

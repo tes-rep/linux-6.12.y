@@ -26,13 +26,11 @@
 #ifndef __ODM_DBG_H__
 #define __ODM_DBG_H__
 
-/*#define DEBUG_VERSION	"1.1"*/ /*2015.07.29 YuChen*/
-/*#define DEBUG_VERSION	"1.2"*/ /*2015.08.28 Dino*/
-/*#define DEBUG_VERSION	"1.3"*/ /*2016.04.28 YuChen*/
-/*#define DEBUG_VERSION	"1.4"*/ /*2017.03.13 Dino*/
-/*#define DEBUG_VERSION "2.0"*/ /*2018.01.10 Dino*/
-/* 2019.03.25 fix nhm_r[11] debug msg error*/
-#define DEBUG_VERSION "2.6"
+/*@#define DEBUG_VERSION	"1.1"*/ /*@2015.07.29 YuChen*/
+/*@#define DEBUG_VERSION	"1.2"*/ /*@2015.08.28 Dino*/
+/*@#define DEBUG_VERSION	"1.3"*/ /*@2016.04.28 YuChen*/
+/*@#define DEBUG_VERSION	"1.4"*/ /*@2017.03.13 Dino*/
+#define DEBUG_VERSION "2.0" /*@2018.01.10 Dino*/
 
 /*@
  * ============================================================

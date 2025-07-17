@@ -682,11 +682,8 @@ void phydm_tx_path_by_mac_or_reg(void *dm_void, enum phydm_path_ctrl ctrl)
 	p_div->tx_path_ctrl = ctrl;
 
 	switch (dm->support_ic_type) {
-	#ifdef PHYDM_IC_JGR3_SERIES_SUPPORT
-	case ODM_RTL8822B:
+	#if (RTL8822C_SUPPORT)
 	case ODM_RTL8822C:
-	case ODM_RTL8812F:
-	case ODM_RTL8197G:
 		if (ctrl == TX_PATH_BY_REG) {
 			odm_set_bb_reg(dm, R_0x1e24, BIT(16), 0); /*OFDM*/
 			odm_set_bb_reg(dm, R_0x1a84, 0xe0, 0); /*CCK*/
@@ -786,22 +783,12 @@ void phydm_set_tx_path_by_bb_reg(void *dm_void, enum bb_path tx_path_sel_1ss)
 		break;
 	#endif
 
-	#if RTL8822B_SUPPORT
+	#if 0 /*RTL8822B_SUPPORT*/
 	case ODM_RTL8822B:
 		if (dm->tx_ant_status != BB_PATH_AB)
 			return;
 
 		phydm_config_tx_path_8822b(dm, BB_PATH_AB,
-					   tx_path_sel_1ss, tx_path_sel_cck);
-		break;
-	#endif
-
-	#if RTL8192F_SUPPORT
-	case ODM_RTL8192F:
-		if (dm->tx_ant_status != BB_PATH_AB)
-			return;
-
-		phydm_config_tx_path_8192f(dm, BB_PATH_AB,
 					   tx_path_sel_1ss, tx_path_sel_cck);
 		break;
 	#endif
@@ -915,12 +902,10 @@ void phydm_tx_path_diversity(void *dm_void)
 	}
 
 	switch (dm->support_ic_type) {
-	#ifdef PHYDM_CONFIG_PATH_DIV_V2
+	#if (RTL8822C_SUPPORT || RTL8822B_SUPPORT || RTL8812A_SUPPORT)
+	case ODM_RTL8812:
 	case ODM_RTL8822B:
 	case ODM_RTL8822C:
-	case ODM_RTL8192F:
-	case ODM_RTL8812F:
-	case ODM_RTL8197G:
 		if (dm->rx_ant_status != BB_PATH_AB) {
 			PHYDM_DBG(dm, DBG_PATH_DIV,
 				  "[Return] tx_Path_en=%d, rx_Path_en=%d\n",
@@ -929,12 +914,6 @@ void phydm_tx_path_diversity(void *dm_void)
 		}
 
 		p_div->path_div_in_progress = true;
-		phydm_tx_path_diversity_2ss(dm);
-		break;
-	#endif
-
-	#if (RTL8812A_SUPPORT)
-	case ODM_RTL8812:
 		phydm_tx_path_diversity_2ss(dm);
 		break;
 	#endif
@@ -978,12 +957,9 @@ void phydm_tx_path_diversity_init(void *dm_void)
 		return;
 
 	switch (dm->support_ic_type) {
-	#ifdef PHYDM_CONFIG_PATH_DIV_V2
+	#if (RTL8822C_SUPPORT || RTL8822B_SUPPORT)
 	case ODM_RTL8822C:
 	case ODM_RTL8822B:
-	case ODM_RTL8192F:
-	case ODM_RTL8812F:
-	case ODM_RTL8197G:
 	phydm_tx_path_diversity_init_v2(dm); /*@ After 8822B*/
 	break;
 	#endif

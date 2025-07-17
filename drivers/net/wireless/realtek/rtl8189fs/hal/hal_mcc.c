@@ -183,7 +183,7 @@ static void rtw_hal_mcc_update_go_p2p_ie(PADAPTER padapter)
 		RTW_INFO("p2p_go_noa_ie_len:%d\n", pmccadapriv->p2p_go_noa_ie_len);
 		RTW_INFO_DUMP("\n", pmccadapriv->p2p_go_noa_ie, pmccadapriv->p2p_go_noa_ie_len);
 	}
-	update_beacon(padapter, _VENDOR_SPECIFIC_IE_, P2P_OUI, _TRUE, 0);
+	update_beacon(padapter, _VENDOR_SPECIFIC_IE_, P2P_OUI, _TRUE);
 }
 
 /**
@@ -200,7 +200,7 @@ static void rtw_hal_mcc_remove_go_p2p_ie(PADAPTER padapter)
 		return;
 
 	pmccadapriv->p2p_go_noa_ie_len = 0;
-	update_beacon(padapter, _VENDOR_SPECIFIC_IE_, P2P_OUI, _TRUE, 0);
+	update_beacon(padapter, _VENDOR_SPECIFIC_IE_, P2P_OUI, _TRUE);
 }
 
 /* restore IQK value for all interface */
@@ -385,7 +385,7 @@ static void mcc_cfg_phdym_rf_ch (_adapter *adapter)
 
 		set_channel_bwmode(adapter, mlmeext->cur_channel, mlmeext->cur_ch_offset, mlmeext->cur_bwmode);
 		order = mccadapriv->order;
-		mcc_dm->mcc_rf_ch[order] = phy_query_rf_reg(adapter, RF_PATH_A, 0x18, 0xffffffff);
+		mcc_dm->mcc_rf_channel[order] = phy_query_rf_reg(adapter, RF_PATH_A, 0x18, 0xffffffff);
 }
 
 static void mcc_cfg_phdym_update_macid (_adapter *adapter, u8 add, u8 mac_id)
@@ -452,7 +452,7 @@ static void mcc_cfg_phdym_start(_adapter *adapter, u8 start)
 					/* do nothing for mcc start due to phydm will init to 0xff */
 					mcc_dm->sta_macid[i][j] = 0xff;
 			}
-			mcc_dm->mcc_rf_ch[i] = 0xff;
+			mcc_dm->mcc_rf_channel[i] = 0xff;
 		}
 		mcc_dm->mcc_status = 0;
 		#endif
@@ -478,8 +478,8 @@ static void mcc_cfg_phdym_dump(_adapter *adapter, void *sel)
 	RTW_PRINT_SEL(sel, "rfk_forbidden=%d\n", rfk_forbidden);
 	for(i = 0; i < MAX_MCC_NUM; i ++) {
 
-		if (mcc_dm->mcc_rf_ch[i] != 0xff)
-			RTW_PRINT_SEL(sel, "mcc_dm->mcc_rf_ch[%d] = 0x%02x\n", i, mcc_dm->mcc_rf_ch[i]);
+		if (mcc_dm->mcc_rf_channel[i] != 0xff)
+			RTW_PRINT_SEL(sel, "mcc_dm->mcc_rf_channel[%d] = 0x%02x\n", i, mcc_dm->mcc_rf_channel[i]);
 		
 		for(j = 0; j < NUM_STA; j ++) {
 			if (mcc_dm->sta_macid[i][j] != 0xff)
@@ -1180,7 +1180,7 @@ static u8 rtw_hal_decide_mcc_role(PADAPTER padapter)
 	}
 
 	rtw_hal_mcc_update_timing_parameters(padapter, _TRUE);
-
+exit:
 	return ret;
 }
 
@@ -1347,7 +1347,7 @@ u8 rtw_hal_dl_mcc_fw_rsvd_page(_adapter *adapter, u8 *pframe, u16 *index,
 	}
 
 	for (i = 0; i < MAX_MCC_NUM; i++) {
-		u8 center_ch = 0, band, ch = 0, bw = 0, bw_offset = 0;
+		u8 center_ch = 0, ch = 0, bw = 0, bw_offset = 0;
 		u8 power_index = 0;
 		u8 rate_array_sz = 0;
 		u8 *rates = NULL;
@@ -1363,7 +1363,6 @@ u8 rtw_hal_dl_mcc_fw_rsvd_page(_adapter *adapter, u8 *pframe, u16 *index,
 		bw = pmlmeext->cur_bwmode;
 		bw_offset = pmlmeext->cur_ch_offset;
 		center_ch = rtw_get_center_ch(ch, bw, bw_offset);
-		band = center_ch <= 14 ? BAND_ON_2_4G : BAND_ON_5G;
 		rtw_hal_mcc_upadate_chnl_bw(iface, ch, bw_offset, bw, _TRUE);
 
 		start = &pframe[*index - tx_desc];
@@ -1392,7 +1391,7 @@ u8 rtw_hal_dl_mcc_fw_rsvd_page(_adapter *adapter, u8 *pframe, u16 *index,
 				rate_array_sz = rates_by_sections[CCK].rate_num;
 				rates = rates_by_sections[CCK].rates;
 				for (j = 0; j < rate_array_sz; ++j) {
-					power_index = phy_get_tx_power_index_ex(iface, path, CCK, rates[j], bw, band, center_ch, ch);
+					power_index = rtw_hal_get_tx_power_index(iface, path, rates[j], bw, center_ch, NULL);
 					rate = PHY_GetRateIndexOfTxPowerByRate(rates[j]);
 
 					shift = rate % 4;
@@ -1434,7 +1433,7 @@ u8 rtw_hal_dl_mcc_fw_rsvd_page(_adapter *adapter, u8 *pframe, u16 *index,
 			rate_array_sz = rates_by_sections[OFDM].rate_num;
 			rates = rates_by_sections[OFDM].rates;
 			for (j = 0; j < rate_array_sz; ++j) {
-				power_index = phy_get_tx_power_index_ex(iface, path, OFDM, rates[j], bw, band, center_ch, ch);
+				power_index = rtw_hal_get_tx_power_index(iface, path, rates[j], bw, center_ch, NULL);
 				rate = PHY_GetRateIndexOfTxPowerByRate(rates[j]);
 
 				shift = rate % 4;
@@ -1474,7 +1473,7 @@ u8 rtw_hal_dl_mcc_fw_rsvd_page(_adapter *adapter, u8 *pframe, u16 *index,
 			rate_array_sz = rates_by_sections[HT_MCS0_MCS7].rate_num;
 			rates = rates_by_sections[HT_MCS0_MCS7].rates;
 			for (j = 0; j < rate_array_sz; ++j) {
-				power_index = phy_get_tx_power_index_ex(iface, path, HT_1SS, rates[j], bw, band, center_ch, ch);
+				power_index = rtw_hal_get_tx_power_index(iface, path, rates[j], bw, center_ch, NULL);
 				rate = PHY_GetRateIndexOfTxPowerByRate(rates[j]);
 
 				shift = rate % 4;
@@ -1514,7 +1513,7 @@ u8 rtw_hal_dl_mcc_fw_rsvd_page(_adapter *adapter, u8 *pframe, u16 *index,
 			rate_array_sz = rates_by_sections[HT_MCS8_MCS15].rate_num;
 			rates = rates_by_sections[HT_MCS8_MCS15].rates;
 			for (j = 0; j < rate_array_sz; ++j) {
-				power_index = phy_get_tx_power_index_ex(iface, path, HT_2SS, rates[j], bw, band, center_ch, ch);
+				power_index = rtw_hal_get_tx_power_index(iface, path, rates[j], bw, center_ch, NULL);
 				rate = PHY_GetRateIndexOfTxPowerByRate(rates[j]);
 
 				shift = rate % 4;
@@ -1553,7 +1552,7 @@ u8 rtw_hal_dl_mcc_fw_rsvd_page(_adapter *adapter, u8 *pframe, u16 *index,
 			rate_array_sz = rates_by_sections[VHT_1SSMCS0_1SSMCS9].rate_num;
 			rates = rates_by_sections[VHT_1SSMCS0_1SSMCS9].rates;
 			for (j = 0; j < rate_array_sz; ++j) {
-				power_index = phy_get_tx_power_index_ex(iface, path, VHT_1SS, rates[j], bw, band, center_ch, ch);
+				power_index = rtw_hal_get_tx_power_index(iface, path, rates[j], bw, center_ch, NULL);
 				rate = PHY_GetRateIndexOfTxPowerByRate(rates[j]);
 
 				shift = rate % 4;
@@ -1589,7 +1588,7 @@ u8 rtw_hal_dl_mcc_fw_rsvd_page(_adapter *adapter, u8 *pframe, u16 *index,
 			rate_array_sz = rates_by_sections[VHT_2SSMCS0_2SSMCS9].rate_num;
 			rates = rates_by_sections[VHT_2SSMCS0_2SSMCS9].rates;
 			for (j = 0; j < rate_array_sz; ++j) {
-				power_index = phy_get_tx_power_index_ex(iface, path, VHT_2SS, rates[j], bw, band, center_ch, ch);
+				power_index = rtw_hal_get_tx_power_index(iface, path, rates[j], bw, center_ch, NULL);
 				rate = PHY_GetRateIndexOfTxPowerByRate(rates[j]);
 
 				shift = rate % 4;
@@ -1778,7 +1777,6 @@ static void rtw_hal_set_mcc_time_setting_cmd(PADAPTER padapter)
 	rtw_hal_fill_h2c_cmd(padapter, H2C_MCC_TIME_SETTING, H2C_MCC_TIME_SETTING_LEN, cmd);
 }
 
-#ifndef CONFIG_MCC_MODE_V2
 static void rtw_hal_set_mcc_IQK_offload_cmd(PADAPTER padapter)
 {
 	struct dvobj_priv *dvobj = adapter_to_dvobj(padapter);
@@ -1857,7 +1855,6 @@ static void rtw_hal_set_mcc_IQK_offload_cmd(PADAPTER padapter)
 		}
 	}
 }
-#endif
 
 
 static void rtw_hal_set_mcc_macid_cmd(PADAPTER padapter)
@@ -2263,7 +2260,7 @@ static u8 rtw_hal_set_mcc_start_setting(PADAPTER padapter, u8 status)
 
 	/* set mac id to fw */
 	rtw_hal_set_mcc_macid_cmd(padapter);
-#ifdef CONFIG_HW_P0_TSF_SYNC
+
 	if (dvobj->p0_tsf.sync_port != MAX_HW_PORT ) {
 		/* disable tsf auto sync */
 		RTW_INFO("[MCC] disable HW TSF sync\n");
@@ -2271,7 +2268,7 @@ static u8 rtw_hal_set_mcc_start_setting(PADAPTER padapter, u8 status)
 	} else {
 		RTW_INFO("[MCC] already disable HW TSF sync\n");
 	}
-#endif
+
 	/* set mcc parameter  */
 	rtw_hal_set_mcc_ctrl_cmd(padapter, _FALSE);
 

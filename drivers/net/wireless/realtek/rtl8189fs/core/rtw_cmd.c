@@ -609,7 +609,7 @@ _next:
 				if (extra_parm && extra_parm->pbuf && extra_parm->size > 0)
 					rtw_mfree(extra_parm->pbuf, extra_parm->size);
 			}
-			#if CONFIG_DFS
+			#ifdef CONFIG_DFS
 			else if (pcmd->cmdcode == GEN_CMD_CODE(_SetChannelSwitch))
 				adapter_to_rfctl(padapter)->csa_ch = 0;
 			#endif
@@ -709,7 +709,7 @@ post_process:
 			if (extra_parm->pbuf && extra_parm->size > 0)
 				rtw_mfree(extra_parm->pbuf, extra_parm->size);
 		}
-		#if CONFIG_DFS
+		#ifdef CONFIG_DFS
 		else if (pcmd->cmdcode == GEN_CMD_CODE(_SetChannelSwitch))
 			adapter_to_rfctl(padapter)->csa_ch = 0;
 		#endif
@@ -1411,9 +1411,9 @@ u8 rtw_joinbss_cmd(_adapter  *padapter, struct wlan_network *pnetwork)
 #ifdef CONFIG_80211AC_VHT
 	/* save AP beamform_cap info for BCM IOT issue */
 	if (pmlmeinfo->assoc_AP_vendor == HT_IOT_PEER_BROADCOM)
-		pvhtpriv->ap_is_mu_bfer =
-			get_vht_mu_bfer_cap(pnetwork->network.IEs,
-				pnetwork->network.IELength);
+		get_vht_bf_cap(pnetwork->network.IEs,
+			pnetwork->network.IELength,
+			&pvhtpriv->ap_bf_cap);
 #endif
 	/*
 		Modified by Arvin 2015/05/13
@@ -3212,8 +3212,8 @@ static void dynamic_update_bcn_check(_adapter *padapter)
 				&& _FALSE == ATOMIC_READ(&pmlmepriv->olbc_ht)) {
 
 				if (rtw_ht_operation_update(padapter) > 0) {
-					update_beacon(padapter, _HT_CAPABILITY_IE_, NULL, _FALSE, 0);
-					update_beacon(padapter, _HT_ADD_INFO_IE_, NULL, _TRUE, 0);
+					update_beacon(padapter, _HT_CAPABILITY_IE_, NULL, _FALSE);
+					update_beacon(padapter, _HT_ADD_INFO_IE_, NULL, _TRUE);
 				}
 			}
 #endif /* CONFIG_80211N_HT */
@@ -3226,8 +3226,8 @@ static void dynamic_update_bcn_check(_adapter *padapter)
 			&& _FALSE != ATOMIC_READ(&pmlmepriv->olbc_ht)) {
 					
 			if (rtw_ht_operation_update(padapter) > 0) {
-				update_beacon(padapter, _HT_CAPABILITY_IE_, NULL, _FALSE, 0);
-				update_beacon(padapter, _HT_ADD_INFO_IE_, NULL, _TRUE, 0);
+				update_beacon(padapter, _HT_CAPABILITY_IE_, NULL, _FALSE);
+				update_beacon(padapter, _HT_ADD_INFO_IE_, NULL, _TRUE);
 
 			}
 			ATOMIC_SET(&pmlmepriv->olbc, _FALSE);
@@ -4022,7 +4022,7 @@ exit:
 
 }
 
-#if CONFIG_DFS
+#ifdef CONFIG_DFS
 void rtw_dfs_ch_switch_hdl(struct dvobj_priv *dvobj)
 {
 	struct rf_ctl_t *rfctl = dvobj_to_rfctl(dvobj);
@@ -4143,7 +4143,7 @@ static void rtw_chk_hi_queue_hdl(_adapter *padapter)
 			rtw_tim_map_clear(padapter, pstapriv->sta_dz_bitmap, 0);
 
 			if (update_tim == _TRUE)
-				_update_beacon(padapter, _TIM_IE_, NULL, _TRUE, 0,"bmc sleepq and HIQ empty");
+				_update_beacon(padapter, _TIM_IE_, NULL, _TRUE, "bmc sleepq and HIQ empty");
 		} else /* re check again */
 			rtw_chk_hi_queue_cmd(padapter);
 
@@ -5532,41 +5532,6 @@ exit:
 }
 #endif
 
-
-void rtw_ac_parm_cmd_hdl(_adapter *padapter, u8 *_ac_parm_buf, int ac_type)
-{
-
-	u32 ac_parm_buf;
-
-	_rtw_memcpy(&ac_parm_buf, _ac_parm_buf, sizeof(ac_parm_buf));
-	switch (ac_type) {
-	case XMIT_VO_QUEUE:
-		RTW_INFO(FUNC_NDEV_FMT" AC_VO = 0x%08x\n", FUNC_ADPT_ARG(padapter), (unsigned int) ac_parm_buf);
-		rtw_hal_set_hwreg(padapter, HW_VAR_AC_PARAM_VO, (u8 *)(&ac_parm_buf));
-		break;
-
-	case XMIT_VI_QUEUE:
-		RTW_INFO(FUNC_NDEV_FMT" AC_VI = 0x%08x\n", FUNC_ADPT_ARG(padapter), (unsigned int) ac_parm_buf);
-		rtw_hal_set_hwreg(padapter, HW_VAR_AC_PARAM_VI, (u8 *)(&ac_parm_buf));
-		break;
-
-	case XMIT_BE_QUEUE:
-		RTW_INFO(FUNC_NDEV_FMT" AC_BE = 0x%08x\n", FUNC_ADPT_ARG(padapter), (unsigned int) ac_parm_buf);
-		rtw_hal_set_hwreg(padapter, HW_VAR_AC_PARAM_BE, (u8 *)(&ac_parm_buf));
-		break;
-
-	case XMIT_BK_QUEUE:
-		RTW_INFO(FUNC_NDEV_FMT" AC_BK = 0x%08x\n", FUNC_ADPT_ARG(padapter), (unsigned int) ac_parm_buf);
-		rtw_hal_set_hwreg(padapter, HW_VAR_AC_PARAM_BK, (u8 *)(&ac_parm_buf));
-		break;
-
-	default:
-		break;
-	}
-
-}
-
-
 u8 rtw_drvextra_cmd_hdl(_adapter *padapter, unsigned char *pbuf)
 {
 	int ret = H2C_SUCCESS;
@@ -5731,9 +5696,6 @@ u8 rtw_drvextra_cmd_hdl(_adapter *padapter, unsigned char *pbuf)
 		rtw_ctrl_txss_wk_hdl(padapter, (struct txss_cmd_parm *)pdrvextra_cmd->pbuf);
 		break;
 #endif
-	case AC_PARM_CMD_WK_CID:
-		rtw_ac_parm_cmd_hdl(padapter, pdrvextra_cmd->pbuf, pdrvextra_cmd->type);
-		break;
 #ifdef CONFIG_AP_MODE
 	case STOP_AP_WK_CID:
 		stop_ap_hdl(padapter);
@@ -5929,50 +5891,4 @@ void rtw_getrttbl_cmd_cmdrsp_callback(_adapter	*padapter,  struct cmd_obj *pcmd)
 #endif
 
 
-}
-
-u8 set_txq_params_cmd(_adapter *adapter, u32 ac_parm, u8 ac_type)
-{
-	struct cmd_obj *cmdobj;
-	struct drvextra_cmd_parm *pdrvextra_cmd_parm;
-	struct cmd_priv *pcmdpriv = &adapter->cmdpriv;
-	u8 *ac_parm_buf = NULL;
-	u8 sz;
-	u8 res = _SUCCESS;
-
-
-	cmdobj = (struct cmd_obj *)rtw_zmalloc(sizeof(struct cmd_obj));
-	if (cmdobj == NULL) {
-		res = _FAIL;
-		goto exit;
-	}
-
-	pdrvextra_cmd_parm = (struct drvextra_cmd_parm *)rtw_zmalloc(sizeof(struct drvextra_cmd_parm));
-	if (pdrvextra_cmd_parm == NULL) {
-		rtw_mfree((u8 *)cmdobj, sizeof(struct cmd_obj));
-		res = _FAIL;
-		goto exit;
-	}
-
-	sz = sizeof(ac_parm);
-	ac_parm_buf = rtw_zmalloc(sz);
-	if (ac_parm_buf == NULL) {
-		rtw_mfree((u8 *)cmdobj, sizeof(struct cmd_obj));
-		rtw_mfree((u8 *)pdrvextra_cmd_parm, sizeof(struct drvextra_cmd_parm));
-		res = _FAIL;
-		goto exit;
-	}
-
-	pdrvextra_cmd_parm->ec_id = AC_PARM_CMD_WK_CID;
-	pdrvextra_cmd_parm->type = ac_type;
-	pdrvextra_cmd_parm->size = sz;
-	pdrvextra_cmd_parm->pbuf = ac_parm_buf;
-
-	_rtw_memcpy(ac_parm_buf, &ac_parm, sz);
-
-	init_h2fwcmd_w_parm_no_rsp(cmdobj, pdrvextra_cmd_parm, GEN_CMD_CODE(_Set_Drv_Extra));
-	res = rtw_enqueue_cmd(pcmdpriv, cmdobj);
-
-exit:
-	return res;
 }

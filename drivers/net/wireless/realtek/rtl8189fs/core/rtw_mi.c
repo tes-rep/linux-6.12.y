@@ -826,7 +826,7 @@ static u8 _rtw_mi_beacon_update(_adapter *padapter, void *data)
 	if (!MLME_IS_STA(padapter)
 	    && check_fwstate(&padapter->mlmepriv, _FW_LINKED) == _TRUE) {
 		RTW_INFO(ADPT_FMT" - update_beacon\n", ADPT_ARG(padapter));
-		update_beacon(padapter, 0xFF, NULL, _TRUE, 0);
+		update_beacon(padapter, 0xFF, NULL, _TRUE);
 	}
 	return _TRUE;
 }
@@ -841,26 +841,22 @@ void rtw_mi_buddy_beacon_update(_adapter *padapter)
 	_rtw_mi_process(padapter, _TRUE, NULL, _rtw_mi_beacon_update);
 }
 
-#ifndef CONFIG_MI_WITH_MBSSID_CAM
-static u8 _rtw_mi_hal_dump_macaddr(_adapter *padapter, void *sel)
+static u8 _rtw_mi_hal_dump_macaddr(_adapter *padapter, void *data)
 {
 	u8 mac_addr[ETH_ALEN] = {0};
 
 	rtw_hal_get_hwreg(padapter, HW_VAR_MAC_ADDR, mac_addr);
-	RTW_PRINT_SEL(sel, ADPT_FMT"- hw port(%d) mac_addr ="MAC_FMT"\n",
-					ADPT_ARG(padapter), padapter->hw_port, MAC_ARG(mac_addr));
-
+	RTW_INFO(ADPT_FMT"MAC Address ="MAC_FMT"\n", ADPT_ARG(padapter), MAC_ARG(mac_addr));
 	return _TRUE;
 }
-void rtw_mi_hal_dump_macaddr(void *sel, _adapter *padapter)
+void rtw_mi_hal_dump_macaddr(_adapter *padapter)
 {
-	_rtw_mi_process(padapter, _FALSE, sel, _rtw_mi_hal_dump_macaddr);
+	_rtw_mi_process(padapter, _FALSE, NULL, _rtw_mi_hal_dump_macaddr);
 }
-void rtw_mi_buddy_hal_dump_macaddr(void *sel, _adapter *padapter)
+void rtw_mi_buddy_hal_dump_macaddr(_adapter *padapter)
 {
-	_rtw_mi_process(padapter, _TRUE, sel, _rtw_mi_hal_dump_macaddr);
+	_rtw_mi_process(padapter, _TRUE, NULL, _rtw_mi_hal_dump_macaddr);
 }
-#endif
 
 #ifdef CONFIG_PCI_HCI
 static u8 _rtw_mi_xmit_tasklet_schedule(_adapter *padapter, void *data)
@@ -1175,29 +1171,6 @@ u8 rtw_mi_sreset_adapter_hdl(_adapter *padapter, u8 bstart)
 
 	return _rtw_mi_process(padapter, _FALSE, &in_data, _rtw_mi_sreset_adapter_hdl);
 }
-
-#if defined(DBG_CONFIG_ERROR_RESET) && defined(CONFIG_CONCURRENT_MODE)
-void rtw_mi_ap_info_restore(_adapter *adapter)
-{
-	int i;
-	_adapter *iface;
-	struct mlme_priv *pmlmepriv;
-	struct dvobj_priv *dvobj = adapter_to_dvobj(adapter);
-
-	for (i = 0; i < dvobj->iface_nums; i++) {
-		iface = dvobj->padapters[i];
-		if (iface) {
-			pmlmepriv = &iface->mlmepriv;
-
-			if (MLME_IS_AP(iface) || MLME_IS_MESH(iface)) {
-				RTW_INFO(FUNC_ADPT_FMT" %s\n", FUNC_ADPT_ARG(iface), MLME_IS_AP(iface) ? "AP" : "MESH");
-				rtw_iface_bcmc_sec_cam_map_restore(iface);
-			}
-		}
-	}
-}
-#endif /*#if defined(DBG_CONFIG_ERROR_RESET) && defined(CONFIG_CONCURRENT_MODE)*/
-
 u8 rtw_mi_buddy_sreset_adapter_hdl(_adapter *padapter, u8 bstart)
 {
 	u8 in_data = bstart;
@@ -1233,7 +1206,7 @@ static u8 _rtw_mi_set_tx_beacon_cmd(_adapter *adapter, void *data)
 
 	if (MLME_IS_AP(adapter) || MLME_IS_MESH(adapter)) {
 		if (pmlmepriv->update_bcn == _TRUE)
-			set_tx_beacon_cmd(adapter, 0);
+			set_tx_beacon_cmd(adapter);
 	}
 	return _TRUE;
 }
@@ -1287,15 +1260,14 @@ u8 rtw_mi_buddy_stay_in_p2p_mode(_adapter *padapter)
 _adapter *rtw_get_iface_by_id(_adapter *padapter, u8 iface_id)
 {
 	_adapter *iface = NULL;
-	struct dvobj_priv *dvobj;
+	struct dvobj_priv *dvobj = adapter_to_dvobj(padapter);
 
 	if ((padapter == NULL) || (iface_id >= CONFIG_IFACE_NUMBER)) {
 		rtw_warn_on(1);
 		return iface;
 	}
 
-	dvobj = adapter_to_dvobj(padapter);
-	return dvobj->padapters[iface_id];
+	return  dvobj->padapters[iface_id];
 }
 
 _adapter *rtw_get_iface_by_macddr(_adapter *padapter, const u8 *mac_addr)

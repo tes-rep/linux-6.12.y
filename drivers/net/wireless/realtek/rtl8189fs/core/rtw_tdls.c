@@ -532,9 +532,10 @@ u8 *rtw_tdls_set_ht_cap(_adapter *padapter, u8 *pframe, struct pkt_attrib *pattr
 void rtw_tdls_process_vht_cap(_adapter *padapter, struct sta_info *ptdls_sta, u8 *data, u8 Length)
 {
 	struct rf_ctl_t *rfctl = adapter_to_rfctl(padapter);
+	struct hal_spec_t *hal_spec = GET_HAL_SPEC(padapter);
 	struct mlme_priv		*pmlmepriv = &padapter->mlmepriv;
 	struct vht_priv			*pvhtpriv = &pmlmepriv->vhtpriv;
-	u8	cur_ldpc_cap = 0, cur_stbc_cap = 0, tx_nss = 0;
+	u8	cur_ldpc_cap = 0, cur_stbc_cap = 0, rf_type = RF_1T1R, tx_nss = 0;
 	u16 cur_beamform_cap = 0;
 	u8	*pcap_mcs;
 
@@ -607,7 +608,8 @@ void rtw_tdls_process_vht_cap(_adapter *padapter, struct sta_info *ptdls_sta, u8
 	ptdls_sta->vhtpriv.ampdu_len = GET_VHT_CAPABILITY_ELE_MAX_RXAMPDU_FACTOR(data);
 
 	pcap_mcs = GET_VHT_CAPABILITY_ELE_RX_MCS(data);
-	tx_nss = GET_HAL_TX_NSS(padapter);
+	rtw_hal_get_hwreg(padapter, HW_VAR_RF_TYPE, (u8 *)(&rf_type));
+	tx_nss = rtw_min(rf_type_to_rf_tx_cnt(rf_type), hal_spec->tx_nss_num);
 	rtw_vht_nss_to_mcsmap(tx_nss, ptdls_sta->vhtpriv.vht_mcs_map, pcap_mcs);
 	ptdls_sta->vhtpriv.vht_highest_rate = rtw_get_vht_highest_rate(ptdls_sta->vhtpriv.vht_mcs_map);
 }

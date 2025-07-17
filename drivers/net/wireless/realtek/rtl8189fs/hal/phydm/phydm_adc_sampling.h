@@ -28,8 +28,7 @@
 
 #if (PHYDM_LA_MODE_SUPPORT)
 
-/* fix compile time flag*/
-#define DYNAMIC_LA_MODE "4.1"
+#define DYNAMIC_LA_MODE "4.0"
 
 /* @1 ============================================================
  * 1  Definition
@@ -97,7 +96,7 @@ struct rt_adcsmp_string {
 
 #ifdef PHYDM_IC_JGR3_SERIES_SUPPORT
 struct la_adv_trig {
-	boolean			la_adv_bbtrigger_en;
+	boolean			la_en_new_bbtrigger;
 	boolean			la_ori_bb_dis;
 	u8			la_and1_sel;
 	u8			la_and1_val;

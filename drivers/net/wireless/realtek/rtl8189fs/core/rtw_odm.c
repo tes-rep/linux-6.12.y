@@ -273,7 +273,7 @@ void rtw_odm_parse_rx_phy_status_chinfo(union recv_frame *rframe, u8 *phys)
 				RTW_PRINT("phys_t%u ta="MAC_FMT" %s, %s(band:%u, ch:%u, l_rxsc:%u)\n"
 					, *phys & 0xf
 					, MAC_ARG(get_ta(wlanhdr))
-					, is_broadcast_mac_addr(rtl_get_ra(wlanhdr)) ? "BC" : is_multicast_mac_addr(rtl_get_ra(wlanhdr)) ? "MC" : "UC"
+					, is_broadcast_mac_addr(get_ra(wlanhdr)) ? "BC" : is_multicast_mac_addr(get_ra(wlanhdr)) ? "MC" : "UC"
 					, HDATA_RATE(attrib->data_rate)
 					, phys_t0->band, phys_t0->channel, phys_t0->rxsc
 				);
@@ -337,6 +337,12 @@ void rtw_odm_parse_rx_phy_status_chinfo(union recv_frame *rframe, u8 *phys)
 
 				static const s8 cch_offset_by_rxsc[15] = {0, 2, -2, 6, -6, 10, -10, 14, -14, 4, -4, 12, -12, 8, -8};
 
+				if (phys_t1->rf_mode > 3) {
+					/* invalid rf_mode */
+					rtw_warn_on(1);
+					goto type1_end;
+				}
+
 				if (phys_t1->rf_mode == 0) {
 					/* RF 20MHz */
 					pkt_cch = phys_t1->channel;
@@ -383,7 +389,7 @@ type1_end:
 				RTW_PRINT("phys_t%u ta="MAC_FMT" %s, %s(band:%u, ch:%u, rf_mode:%u, l_rxsc:%u, ht_rxsc:%u) => %u,%u\n"
 					, *phys & 0xf
 					, MAC_ARG(get_ta(wlanhdr))
-					, is_broadcast_mac_addr(rtl_get_ra(wlanhdr)) ? "BC" : is_multicast_mac_addr(rtl_get_ra(wlanhdr)) ? "MC" : "UC"
+					, is_broadcast_mac_addr(get_ra(wlanhdr)) ? "BC" : is_multicast_mac_addr(get_ra(wlanhdr)) ? "MC" : "UC"
 					, HDATA_RATE(attrib->data_rate)
 					, phys_t1->band, phys_t1->channel, phys_t1->rf_mode, phys_t1->l_rxsc, phys_t1->ht_rxsc
 					, pkt_cch, pkt_bw
@@ -401,7 +407,7 @@ type1_end:
 				RTW_PRINT("phys_t%u ta="MAC_FMT" %s, %s(band:%u, ch:%u, l_rxsc:%u, ht_rxsc:%u)\n"
 					, *phys & 0xf
 					, MAC_ARG(get_ta(wlanhdr))
-					, is_broadcast_mac_addr(rtl_get_ra(wlanhdr)) ? "BC" : is_multicast_mac_addr(rtl_get_ra(wlanhdr)) ? "MC" : "UC"
+					, is_broadcast_mac_addr(get_ra(wlanhdr)) ? "BC" : is_multicast_mac_addr(get_ra(wlanhdr)) ? "MC" : "UC"
 					, HDATA_RATE(attrib->data_rate)
 					, phys_t2->band, phys_t2->channel, phys_t2->l_rxsc, phys_t2->ht_rxsc
 				);

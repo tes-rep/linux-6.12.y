@@ -26,8 +26,7 @@
 #ifndef __PHYDMRAINFO_H__
 #define __PHYDMRAINFO_H__
 
-/* 2019.3.5 add dynamic RRSR en API*/
-#define RAINFO_VERSION "8.2"
+#define RAINFO_VERSION "8.0"
 
 #define	FORCED_UPDATE_RAMASK_PERIOD	5
 
@@ -176,6 +175,8 @@ struct _odm_ra_info_ {
 
 
 struct ra_table {
+	u8	firstconnect;
+	/*@u8	link_tx_rate[ODM_ASSOCIATE_ENTRY_NUM];*/
 	#ifdef MU_EX_MACID
 	u8	mu1_rate[MU_EX_MACID];
 	#endif
@@ -224,6 +225,9 @@ void phydm_ra_debug(void *dm_void, char input[][16], u32 *_used, char *output,
 		    u32 *_out_len);
 
 void odm_c2h_ra_para_report_handler(void *dm_void, u8 *cmd_buf, u8 cmd_len);
+
+void phydm_ra_dynamic_retry_count(void *dm_void);
+
 
 void phydm_print_rate(void *dm_void, u8 rate, u32 dbg_component);
 

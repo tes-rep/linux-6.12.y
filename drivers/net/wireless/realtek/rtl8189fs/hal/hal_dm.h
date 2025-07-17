@@ -46,7 +46,9 @@ void rtw_dyn_soml_para_set(_adapter *adapter, u8 train_num, u8 intvl,
 			u8 period, u8 delay);
 void rtw_dyn_soml_config(_adapter *adapter);
 #endif
+#ifdef RTW_DYNAMIC_RRSR
 void rtw_phydm_set_rrsr(_adapter *adapter, u32 rrsr_value, bool write_rrsr);
+#endif
 void rtw_phydm_watchdog(_adapter *adapter, bool in_lps);
 
 void rtw_hal_update_iqk_fw_offload_cap(_adapter *adapter);
@@ -102,7 +104,9 @@ bool rtw_phydm_set_crystal_cap(_adapter *adapter, u8 crystal_cap);
 #ifdef CONFIG_SUPPORT_DYNAMIC_TXPWR
 void rtw_phydm_set_dyntxpwr(_adapter *adapter, u8 *desc, u8 mac_id);
 #endif
-
+#ifdef CONFIG_RTW_TX_2PATH_EN
+void rtw_phydm_tx_2path_en(_adapter *adapter);
+#endif
 #ifdef CONFIG_LPS_PG
 void rtw_phydm_lps_pg_hdl(_adapter *adapter, struct sta_info *sta, bool in_lpspg);
 #endif

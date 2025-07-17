@@ -277,7 +277,7 @@ struct phydm_fat_struct {
 	u16	aux_cnt_cck[ODM_ASSOCIATE_ENTRY_NUM];
 	u8	rx_idle_ant;
 	u8	rx_idle_ant2;
-	u32	rvrt_val; /*all rvrt_val for pause API must set to u32*/
+	u8	rvrt_val;
 	u8	ant_div_on_off;
 	u8	div_path_type;
 	boolean	is_become_linked;

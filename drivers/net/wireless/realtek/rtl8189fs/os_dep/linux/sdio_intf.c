@@ -1,6 +1,6 @@
 /******************************************************************************
  *
- * Copyright(c) 2007 - 2019 Realtek Corporation.
+ * Copyright(c) 2007 - 2017 Realtek Corporation.
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of version 2 of the GNU General Public License as
@@ -43,6 +43,10 @@ static int wlan_en_gpio = -1;
 #define dev_to_sdio_func(d)     container_of(d, struct sdio_func, dev)
 #endif
 
+#ifdef CONFIG_WOWLAN
+static struct mmc_host *mmc_host = NULL;
+#endif
+
 static const struct sdio_device_id sdio_ids[] = {
 #ifdef CONFIG_RTL8723B
 	{ SDIO_DEVICE(0x024c, 0xB723), .driver_data = RTL8723B},
@@ -83,7 +87,6 @@ static const struct sdio_device_id sdio_ids[] = {
 #ifdef CONFIG_RTL8192F
 	{ SDIO_DEVICE(0x024c, 0x818C), .driver_data = RTL8192F},/*A CUT*/
 	{ SDIO_DEVICE(0x024c, 0xF192), .driver_data = RTL8192F},/*B CUT*/
-	{ SDIO_DEVICE(0x024c, 0xA725), .driver_data = RTL8192F},/*8725AS*/
 #endif /* CONFIG_RTL8192F */
 
 #ifdef CONFIG_RTL8821C
@@ -357,106 +360,6 @@ void dump_sdio_card_info(void *sel, struct dvobj_priv *dvobj)
 
 #define SDIO_CARD_INFO_DUMP(dvobj)	dump_sdio_card_info(RTW_DBGDUMP, dvobj)
 
-#ifdef DBG_SDIO
-#if (DBG_SDIO >= 2)
-void rtw_sdio_dbg_reg_free(struct dvobj_priv *d)
-{
-	struct sdio_data *sdio;
-	u8 *buf;
-	u32 size;
-
-
-	sdio = &d->intf_data;
-
-	buf = sdio->dbg_msg;
-	size = sdio->dbg_msg_size;
-	if (buf){
-		sdio->dbg_msg = NULL;
-		sdio->dbg_msg_size = 0;
-		rtw_mfree(buf, size);
-	}
-
-	buf = sdio->reg_mac;
-	if (buf) {
-		sdio->reg_mac = NULL;
-		rtw_mfree(buf, 0x800);
-	}
-
-	buf = sdio->reg_mac_ext;
-	if (buf) {
-		sdio->reg_mac_ext = NULL;
-		rtw_mfree(buf, 0x800);
-	}
-
-	buf = sdio->reg_local;
-	if (buf) {
-		sdio->reg_local = NULL;
-		rtw_mfree(buf, 0x100);
-	}
-
-	buf = sdio->reg_cia;
-	if (buf) {
-		sdio->reg_cia = NULL;
-		rtw_mfree(buf, 0x200);
-	}
-}
-
-void rtw_sdio_dbg_reg_alloc(struct dvobj_priv *d)
-{
-	struct sdio_data *sdio;
-	u8 *buf;
-
-
-	sdio = &d->intf_data;
-
-	buf = _rtw_zmalloc(0x800);
-	if (buf)
-		sdio->reg_mac = buf;
-
-	buf = _rtw_zmalloc(0x800);
-	if (buf)
-		sdio->reg_mac_ext = buf;
-
-	buf = _rtw_zmalloc(0x100);
-	if (buf)
-		sdio->reg_local = buf;
-
-	buf = _rtw_zmalloc(0x200);
-	if (buf)
-		sdio->reg_cia = buf;
-}
-#endif /* DBG_SDIO >= 2 */
-
-static void sdio_dbg_init(struct dvobj_priv *d)
-{
-	struct sdio_data *sdio;
-
-
-	sdio = &d->intf_data;
-
-	sdio->cmd52_err_cnt = 0;
-	sdio->cmd53_err_cnt = 0;
-
-#if (DBG_SDIO >= 1)
-	sdio->reg_dump_mark = 0;
-#endif /* DBG_SDIO >= 1 */
-
-#if (DBG_SDIO >= 3)
-	sdio->dbg_enable = 0;
-	sdio->err_stop = 0;
-	sdio->err_test = 0;
-	sdio->err_test_triggered = 0;
-#endif /* DBG_SDIO >= 3 */
-}
-
-static void sdio_dbg_deinit(struct dvobj_priv *d)
-{
-#if (DBG_SDIO >= 2)
-	rtw_sdio_dbg_reg_free(d);
-#endif /* DBG_SDIO >= 2 */
-}
-#endif /* DBG_SDIO */
-
 u32 sdio_init(struct dvobj_priv *dvobj)
 {
 	PSDIO_DATA psdio_data;
@@ -503,11 +406,6 @@ u32 sdio_init(struct dvobj_priv *dvobj)
 	)
 		psdio_data->sd3_bus_mode = _TRUE;
 #endif
-
-#ifdef DBG_SDIO
-	sdio_dbg_init(dvobj);
-#endif /* DBG_SDIO */
-
 	SDIO_CARD_INFO_DUMP(dvobj);
 
 
@@ -538,10 +436,6 @@ void sdio_deinit(struct dvobj_priv *dvobj)
 
 		sdio_release_host(func);
 	}
-
-#ifdef DBG_SDIO
-	sdio_dbg_deinit(dvobj);
-#endif /* DBG_SDIO */
 }
 
 u8 sdio_get_num_of_func(struct dvobj_priv *dvobj)
@@ -561,10 +455,8 @@ static void rtw_decide_chip_type_by_device_id(struct dvobj_priv *dvobj, const st
 #endif
 
 #if defined(CONFIG_RTL8723B)
-	if (dvobj->chip_type == RTL8723B) {
-		dvobj->HardwareType = HARDWARE_TYPE_RTL8723BS;
-		RTW_INFO("CHIP TYPE: RTL8723B\n");
-	}
+	dvobj->chip_type = RTL8723B;
+	dvobj->HardwareType = HARDWARE_TYPE_RTL8723BS;
 #endif
 
 #if defined(CONFIG_RTL8821A)
@@ -967,6 +859,7 @@ static int rtw_drv_init(
 #ifdef CONFIG_CONCURRENT_MODE
 	int i;
 #endif
+	struct net_device *pnetdev;
 	PADAPTER padapter = NULL;
 	struct dvobj_priv *dvobj;
 
@@ -1171,21 +1064,13 @@ extern int pm_netdev_close(struct net_device *pnetdev, u8 bnormal);
 static int rtw_sdio_suspend(struct device *dev)
 {
 	struct sdio_func *func = dev_to_sdio_func(dev);
-	struct dvobj_priv *psdpriv;
+	struct dvobj_priv *psdpriv = sdio_get_drvdata(func);
 	struct pwrctrl_priv *pwrpriv = NULL;
 	_adapter *padapter = NULL;
 	struct debug_priv *pdbgpriv = NULL;
 	int ret = 0;
-#ifdef CONFIG_RTW_SDIO_PM_KEEP_POWER
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 34))
-	mmc_pm_flag_t pm_flag = 0;
-#endif
-#endif
+	u8 ch, bw, offset;
 
-	if (dev == NULL)
-		goto exit;
-
-	psdpriv = sdio_get_drvdata(func);
 	if (psdpriv == NULL)
 		goto exit;
 
@@ -1205,6 +1090,7 @@ static int rtw_sdio_suspend(struct device *dev)
 
 	ret = rtw_suspend_common(padapter);
 
+exit:
 #ifdef CONFIG_RTW_SDIO_PM_KEEP_POWER
 #if (LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 34))
 	/* Android 4.0 don't support WIFI close power */
@@ -1212,20 +1098,22 @@ static int rtw_sdio_suspend(struct device *dev)
 	/* this is sprd's bug in Android 4.0, but sprd don't */
 	/* want to fix it. */
 	/* we have test power under 8723as, power consumption is ok */
-	pm_flag = sdio_get_host_pm_caps(func);
-	RTW_INFO("cmd: %s: suspend: PM flag = 0x%x\n", sdio_func_id(func), pm_flag);
-	if (!(pm_flag & MMC_PM_KEEP_POWER)) {
-		RTW_INFO("%s: cannot remain alive while host is suspended\n", sdio_func_id(func));
-		if (pdbgpriv)
-			pdbgpriv->dbg_suspend_error_cnt++;
-		return -ENOSYS;
-	} else {
-		RTW_INFO("cmd: suspend with MMC_PM_KEEP_POWER\n");
-		sdio_set_host_pm_flags(func, MMC_PM_KEEP_POWER);
+	if (func) {
+		mmc_pm_flag_t pm_flag = 0;
+		pm_flag = sdio_get_host_pm_caps(func);
+		RTW_INFO("cmd: %s: suspend: PM flag = 0x%x\n", sdio_func_id(func), pm_flag);
+		if (!(pm_flag & MMC_PM_KEEP_POWER)) {
+			RTW_INFO("%s: cannot remain alive while host is suspended\n", sdio_func_id(func));
+			if (pdbgpriv)
+				pdbgpriv->dbg_suspend_error_cnt++;
+			return -ENOSYS;
+		} else {
+			RTW_INFO("cmd: suspend with MMC_PM_KEEP_POWER\n");
+			sdio_set_host_pm_flags(func, MMC_PM_KEEP_POWER);
+		}
 	}
 #endif
 #endif
-exit:
 	return ret;
 }
 int rtw_resume_process(_adapter *padapter)

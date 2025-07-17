@@ -385,6 +385,7 @@ struct	wlan_network *_rtw_alloc_network(struct	mlme_priv *pmlmepriv) /* (_queue 
 	pnetwork->network_type = 0;
 	pnetwork->fixed = _FALSE;
 	pnetwork->last_scanned = rtw_get_current_time();
+	pnetwork->last_non_hidden_ssid_ap = pnetwork->last_scanned;
 #if defined(CONFIG_RTW_MESH) && CONFIG_RTW_MESH_ACNODE_PREVENT
 	pnetwork->acnode_stime = 0;
 	pnetwork->acnode_notify_etime = 0;
@@ -1037,10 +1038,13 @@ bool rtw_update_scanned_network(_adapter *adapter, WLAN_BSSID_EX *target)
 			rtw_hal_get_odm_var(adapter, HAL_ODM_ANTDIV_SELECT, &(target->PhyInfo.Optimum_antenna), NULL);
 #endif
 			_rtw_memcpy(&(pnetwork->network), target,  get_WLAN_BSSID_EX_sz(target));
-			/* pnetwork->last_scanned = rtw_get_current_time(); */
+			pnetwork->bcn_keys_valid = 0;
+			if (target->Reserved[0] == BSS_TYPE_BCN || target->Reserved[0] == BSS_TYPE_PROB_RSP)
+				rtw_update_bcn_keys_of_network(pnetwork);
 			/* variable initialize */
 			pnetwork->fixed = _FALSE;
 			pnetwork->last_scanned = rtw_get_current_time();
+			pnetwork->last_non_hidden_ssid_ap = pnetwork->last_scanned;
 			#if defined(CONFIG_RTW_MESH) && CONFIG_RTW_MESH_ACNODE_PREVENT
 			pnetwork->acnode_stime = 0;
 			pnetwork->acnode_notify_etime = 0;
@@ -1066,8 +1070,9 @@ bool rtw_update_scanned_network(_adapter *adapter, WLAN_BSSID_EX *target)
 			rtw_hal_get_odm_var(adapter, HAL_ODM_ANTDIV_SELECT, &(target->PhyInfo.Optimum_antenna), NULL);
 #endif
 			_rtw_memcpy(&(pnetwork->network), target, bssid_ex_sz);
-
-			pnetwork->last_scanned = rtw_get_current_time();
+			pnetwork->bcn_keys_valid = 0;
+			if (target->Reserved[0] == BSS_TYPE_BCN || target->Reserved[0] == BSS_TYPE_PROB_RSP)
+				rtw_update_bcn_keys_of_network(pnetwork);
 
 			/* bss info not receving from the right channel */
 			if (pnetwork->network.PhyInfo.SignalQuality == 101)
@@ -1084,21 +1089,36 @@ bool rtw_update_scanned_network(_adapter *adapter, WLAN_BSSID_EX *target)
 		#if defined(CONFIG_RTW_MESH) && CONFIG_RTW_MESH_ACNODE_PREVENT
 		systime last_scanned = pnetwork->last_scanned;
 		#endif
+		struct beacon_keys bcn_keys;
+		bool bcn_keys_valid = 0;
+		bool is_hidden_ssid_ap = 0;
 
 		pnetwork->last_scanned = rtw_get_current_time();
 
-		/* target.Reserved[0]==BSS_TYPE_BCN, means that scanned network is a bcn frame. */
-		if ((pnetwork->network.IELength > target->IELength) && (target->Reserved[0] == BSS_TYPE_BCN))
-			update_ie = _FALSE;
+		if (target->Reserved[0] == BSS_TYPE_BCN || target->Reserved[0] == BSS_TYPE_PROB_RSP) {
+			if (target->InfrastructureMode == Ndis802_11Infrastructure) {
+				is_hidden_ssid_ap = hidden_ssid_ap(target);
+				if (!is_hidden_ssid_ap) /* update last time it's non hidden ssid AP */
+					pnetwork->last_non_hidden_ssid_ap = rtw_get_current_time();
+			}
+			bcn_keys_valid = rtw_get_bcn_keys_from_bss(target, &bcn_keys);
+		}
 
-		if (MLME_IS_MESH(adapter)
-			/* probe resp(3) > beacon(1) > probe req(2) */
-			|| (target->Reserved[0] != BSS_TYPE_PROB_REQ
-				&& target->Reserved[0] >= pnetwork->network.Reserved[0])
-		)
+		if (target->InfrastructureMode == Ndis802_11_mesh
+			|| target->Reserved[0] >= pnetwork->network.Reserved[0])
 			update_ie = _TRUE;
-		else
-			update_ie = _FALSE;
+		else if (target->InfrastructureMode == Ndis802_11Infrastructure && !pnetwork->fixed
+			&& rtw_get_passing_time_ms(pnetwork->last_non_hidden_ssid_ap) > SCANQUEUE_LIFETIME)
+			update_ie = _TRUE;
+		else if (bcn_keys_valid) {
+			if (is_hidden_ssid(bcn_keys.ssid, bcn_keys.ssid_len)) {
+				/* hidden ssid, replace with current beacon ssid directly */
+				_rtw_memcpy(bcn_keys.ssid, pnetwork->bcn_keys.ssid, pnetwork->bcn_keys.ssid_len);
+				bcn_keys.ssid_len = pnetwork->bcn_keys.ssid_len;
+			}
+			if (rtw_bcn_key_compare(&pnetwork->bcn_keys, &bcn_keys) == _FALSE)
+				update_ie = _TRUE;
+		}
 
 		#if defined(CONFIG_RTW_MESH) && CONFIG_RTW_MESH_ACNODE_PREVENT
 		if (!MLME_IS_MESH(adapter) || !MLME_IS_ASOC(adapter)
@@ -1110,6 +1130,13 @@ bool rtw_update_scanned_network(_adapter *adapter, WLAN_BSSID_EX *target)
 			pnetwork->acnode_notify_etime = 0;
 		}
 		#endif
+
+		if (bcn_keys_valid) {
+			_rtw_memcpy(&pnetwork->bcn_keys, &bcn_keys, sizeof(bcn_keys));
+			pnetwork->bcn_keys_valid = 1;
+		} else if (update_ie)
+			pnetwork->bcn_keys_valid = 0;
+
 		update_network(&(pnetwork->network), target, adapter, update_ie);
 	}
 
@@ -1511,6 +1538,7 @@ u8 _rtw_sitesurvey_condition_check(const char *caller, _adapter *adapter, bool c
 		goto _exit;
 	}
 
+#ifdef CONFIG_ADAPTIVITY_DENY_SCAN
 	if (registry_par->adaptivity_en
 	    && rtw_phydm_get_edcca_flag(adapter)
 	    && rtw_is_2g_ch(GET_HAL_DATA(adapter)->current_channel)) {
@@ -1520,6 +1548,7 @@ u8 _rtw_sitesurvey_condition_check(const char *caller, _adapter *adapter, bool c
 		ss_condition = SS_DENY_ADAPTIVITY;
 		goto _exit;
 	}
+#endif /* CONFIG_ADAPTIVITY_DENY_SCAN */
 
 	if (check_fwstate(pmlmepriv, WIFI_AP_STATE)){
 		if(check_fwstate(pmlmepriv, WIFI_UNDER_WPS)) {
@@ -2776,7 +2805,7 @@ void rtw_sta_mstatus_disc_rpt(_adapter *adapter, u8 mac_id)
 {
 	struct macid_ctl_t *macid_ctl = &adapter->dvobj->macid_ctl;
 
-	if (mac_id < macid_ctl->num) {
+	if (mac_id >= 0 && mac_id < macid_ctl->num) {
 		u8 id_is_shared = mac_id == RTW_DEFAULT_MGMT_MACID; /* TODO: real shared macid judgment */
 
 		RTW_INFO(FUNC_ADPT_FMT" - mac_id=%d%s\n", FUNC_ADPT_ARG(adapter)
@@ -3446,15 +3475,15 @@ void rtw_dynamic_check_timer_handlder(void *ctx)
 	struct dvobj_priv *pdvobj = (struct dvobj_priv *)ctx;
 	_adapter *adapter = dvobj_get_primary_adapter(pdvobj);
 
-	if (!adapter)
-		goto exit;
-
 #if (MP_DRIVER == 1)
 	if (adapter->registrypriv.mp_mode == 1 && adapter->mppriv.mp_dm == 0) { /* for MP ODM dynamic Tx power tracking */
 		/* RTW_INFO("%s mp_dm =0 return\n", __func__); */
 		goto exit;
 	}
 #endif
+
+	if (!adapter)
+		goto exit;
 
 	if (!rtw_is_hw_init_completed(adapter))
 		goto exit;
@@ -4227,12 +4256,7 @@ static int SecIsInPMKIDList(_adapter *Adapter, u8 *bssid)
 
 }
 
-int rtw_cached_pmkid(_adapter *Adapter, u8 *bssid)
-{
-	return SecIsInPMKIDList(Adapter, bssid);
-}
-
-int rtw_rsn_sync_pmkid(_adapter *adapter, u8 *ie, uint ie_len, int i_ent)
+static int rtw_rsn_sync_pmkid(_adapter *adapter, u8 *ie, uint ie_len, int i_ent)
 {
 	struct security_priv *sec = &adapter->securitypriv;
 	struct rsne_info info;
@@ -4544,11 +4568,12 @@ unsigned int rtw_restructure_ht_ie(_adapter *padapter, u8 *in_ie, u8 *out_ie, ui
 	HT_CAP_AMPDU_DENSITY best_ampdu_density;
 	unsigned char *p, *pframe;
 	struct rtw_ieee80211_ht_cap ht_capie;
-	u8	cbw40_enable = 0, rf_num = 0, rx_stbc_nss = 0, rx_nss = 0;
+	u8	cbw40_enable = 0, rf_type = 0, rf_num = 0, rx_stbc_nss = 0, rx_nss = 0;
 	struct registry_priv *pregistrypriv = &padapter->registrypriv;
 	struct mlme_priv	*pmlmepriv = &padapter->mlmepriv;
 	struct ht_priv		*phtpriv = &pmlmepriv->htpriv;
 	struct mlme_ext_priv	*pmlmeext = &padapter->mlmeextpriv;
+	struct hal_spec_t *hal_spec = GET_HAL_SPEC(padapter);
 #ifdef CONFIG_80211AC_VHT
 	struct mlme_ext_info	*pmlmeinfo = &(pmlmeext->mlmext_info);
 	struct vht_priv	*pvhtpriv = &pmlmepriv->vhtpriv;
@@ -4606,15 +4631,15 @@ unsigned int rtw_restructure_ht_ie(_adapter *padapter, u8 *in_ie, u8 *out_ie, ui
 					}
 				}
 			}
-			// IOT issue : AP TP-Link WDR6500
-			if(oper_bw == CHANNEL_WIDTH_40){ 
-				p = rtw_get_ie(in_ie, WLAN_EID_HT_CAP, &ielen, in_len);
-				if (p && ielen == HT_CAP_IE_LEN) {
-					oper_bw = GET_HT_CAP_ELE_CHL_WIDTH(p + 2)  ? CHANNEL_WIDTH_40 : CHANNEL_WIDTH_20;
-					if(oper_bw == CHANNEL_WIDTH_20)
-						oper_offset = HAL_PRIME_CHNL_OFFSET_DONT_CARE;
-				}
-			}
+            // IOT issue : AP TP-Link WDR6500
+            if(oper_bw == CHANNEL_WIDTH_40){
+                p = rtw_get_ie(in_ie, WLAN_EID_HT_CAP, &ielen, in_len);
+                if (p && ielen == HT_CAP_IE_LEN) {
+                    oper_bw = GET_HT_CAP_ELE_CHL_WIDTH(p + 2)  ? CHANNEL_WIDTH_40 : CHANNEL_WIDTH_20;
+                    if(oper_bw == CHANNEL_WIDTH_20)
+                        oper_offset = HAL_PRIME_CHNL_OFFSET_DONT_CARE;
+                }
+            }
 		}
 
 		/* adjust bw to fit in channel plan setting */
@@ -4674,7 +4699,8 @@ unsigned int rtw_restructure_ht_ie(_adapter *padapter, u8 *in_ie, u8 *out_ie, ui
 	_rtw_memcpy(ht_capie.supp_mcs_set, pmlmeext->default_supported_mcs_set, 16);
 
 	/* update default supported_mcs_set */
-	rx_nss = GET_HAL_RX_NSS(padapter);
+	rtw_hal_get_hwreg(padapter, HW_VAR_RF_TYPE, (u8 *)(&rf_type));
+	rx_nss = rtw_min(rf_type_to_rf_rx_cnt(rf_type), hal_spec->rx_nss_num);
 
 	switch (rx_nss) {
 	case 1:
@@ -4695,7 +4721,7 @@ unsigned int rtw_restructure_ht_ie(_adapter *padapter, u8 *in_ie, u8 *out_ie, ui
 		set_mcs_rate_by_mask(ht_capie.supp_mcs_set, MCS_RATE_4R);
 		break;
 	default:
-		RTW_WARN("rf_type:%d or rx_nss:%u is not expected\n", GET_HAL_RFPATH(padapter), rx_nss);
+		RTW_WARN("rf_type:%d or rx_nss:%u is not expected\n", rf_type, hal_spec->rx_nss_num);
 	}
 
 	{
@@ -4768,7 +4794,8 @@ unsigned int rtw_restructure_ht_ie(_adapter *padapter, u8 *in_ie, u8 *out_ie, ui
 #ifdef CONFIG_80211AC_VHT
 		/* IOT action suggested by Yu Chen 2017/3/3 */
 		if ((pmlmeinfo->assoc_AP_vendor == HT_IOT_PEER_BROADCOM) &&
-			!pvhtpriv->ap_is_mu_bfer)
+			!pvhtpriv->ap_bf_cap.is_mu_bfer &&
+			pvhtpriv->ap_bf_cap.su_sound_dim == 2)
 			rf_num = (rf_num >= 2 ? 2 : rf_num);
 #endif
 		SET_HT_CAP_TXBF_COMP_STEERING_NUM_ANTENNAS(&ht_capie, rf_num);
@@ -4865,10 +4892,13 @@ void rtw_update_ht_cap(_adapter *padapter, u8 *pie, uint ie_len, u8 channel)
 	if ((cbw40_enable) &&
 	    (pmlmeinfo->HT_caps.u.HT_cap_element.HT_caps_info & BIT(1)) &&
 	    (pmlmeinfo->HT_info.infos[0] & BIT(2))) {
+		struct hal_spec_t *hal_spec = GET_HAL_SPEC(padapter);
 		int i;
+		u8	rf_type = RF_1T1R;
 		u8 tx_nss = 0;
 
-		tx_nss = GET_HAL_TX_NSS(padapter);
+		rtw_hal_get_hwreg(padapter, HW_VAR_RF_TYPE, (u8 *)(&rf_type));
+		tx_nss = rtw_min(rf_type_to_rf_tx_cnt(rf_type), hal_spec->tx_nss_num);
 
 		/* update the MCS set */
 		for (i = 0; i < 16; i++)
@@ -4894,7 +4924,7 @@ void rtw_update_ht_cap(_adapter *padapter, u8 *pie, uint ie_len, u8 channel)
 			set_mcs_rate_by_mask(pmlmeinfo->HT_caps.u.HT_cap_element.MCS_rate, MCS_RATE_4R);
 			break;
 		default:
-			RTW_WARN("tx_nss:%u is not expected\n", tx_nss);
+			RTW_WARN("rf_type:%d or tx_nss_num:%u is not expected\n", rf_type, hal_spec->tx_nss_num);
 		}
 
 		/* switch to the 40M Hz mode accoring to the AP */

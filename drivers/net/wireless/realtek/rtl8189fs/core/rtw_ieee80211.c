@@ -36,28 +36,14 @@ u8 WPA_CIPHER_SUITE_CCMP[] = { 0x00, 0x50, 0xf2, 4 };
 u8 WPA_CIPHER_SUITE_WEP104[] = { 0x00, 0x50, 0xf2, 5 };
 
 u16 RSN_VERSION_BSD = 1;
+u8 RSN_AUTH_KEY_MGMT_UNSPEC_802_1X[] = { 0x00, 0x0f, 0xac, 1 };
+u8 RSN_AUTH_KEY_MGMT_PSK_OVER_802_1X[] = { 0x00, 0x0f, 0xac, 2 };
 u8 RSN_CIPHER_SUITE_NONE[] = { 0x00, 0x0f, 0xac, 0 };
 u8 RSN_CIPHER_SUITE_WEP40[] = { 0x00, 0x0f, 0xac, 1 };
 u8 RSN_CIPHER_SUITE_TKIP[] = { 0x00, 0x0f, 0xac, 2 };
 u8 RSN_CIPHER_SUITE_WRAP[] = { 0x00, 0x0f, 0xac, 3 };
 u8 RSN_CIPHER_SUITE_CCMP[] = { 0x00, 0x0f, 0xac, 4 };
 u8 RSN_CIPHER_SUITE_WEP104[] = { 0x00, 0x0f, 0xac, 5 };
-
-u8 WLAN_AKM_8021X[] = {0x00, 0x0f, 0xac, 1};
-u8 WLAN_AKM_PSK[] = {0x00, 0x0f, 0xac, 2};
-u8 WLAN_AKM_FT_8021X[] = {0x00, 0x0f, 0xac, 3};
-u8 WLAN_AKM_FT_PSK[] = {0x00, 0x0f, 0xac, 4};
-u8 WLAN_AKM_8021X_SHA256[] = {0x00, 0x0f, 0xac, 5};
-u8 WLAN_AKM_PSK_SHA256[] = {0x00, 0x0f, 0xac, 6};
-u8 WLAN_AKM_TDLS[] = {0x00, 0x0f, 0xac, 7};
-u8 WLAN_AKM_SAE[] = {0x00, 0x0f, 0xac, 8};
-u8 WLAN_AKM_FT_OVER_SAE[] = {0x00, 0x0f, 0xac, 9};
-u8 WLAN_AKM_8021X_SUITE_B[] = {0x00, 0x0f, 0xac, 11};
-u8 WLAN_AKM_8021X_SUITE_B_192[] = {0x00, 0x0f, 0xac, 12};
-u8 WLAN_AKM_FILS_SHA256[] = {0x00, 0x0f, 0xac, 14};
-u8 WLAN_AKM_FILS_SHA384[] = {0x00, 0x0f, 0xac, 15};
-u8 WLAN_AKM_FT_FILS_SHA256[] = {0x00, 0x0f, 0xac, 16};
-u8 WLAN_AKM_FT_FILS_SHA384[] = {0x00, 0x0f, 0xac, 17};
 /* -----------------------------------------------------------
  * for adhoc-master to generate ie and provide supported-rate to fw
  * ----------------------------------------------------------- */
@@ -98,34 +84,6 @@ u8 mgn_rates_vht3ss[10] = {MGN_VHT3SS_MCS0, MGN_VHT3SS_MCS1, MGN_VHT3SS_MCS2, MG
 u8 mgn_rates_vht4ss[10] = {MGN_VHT4SS_MCS0, MGN_VHT4SS_MCS1, MGN_VHT4SS_MCS2, MGN_VHT4SS_MCS3, MGN_VHT4SS_MCS4
 	, MGN_VHT4SS_MCS5, MGN_VHT4SS_MCS6, MGN_VHT4SS_MCS7, MGN_VHT4SS_MCS8, MGN_VHT4SS_MCS9
 			  };
-
-RATE_SECTION mgn_rate_to_rs(enum MGN_RATE rate)
-{
-	RATE_SECTION rs = RATE_SECTION_NUM;
-
-	if (IS_CCK_RATE(rate))
-		rs = CCK;
-	else if (IS_OFDM_RATE(rate))
-		rs = OFDM;
-	else if (IS_HT1SS_RATE(rate))
-		rs = HT_1SS;
-	else if (IS_HT2SS_RATE(rate))
-		rs = HT_2SS;
-	else if (IS_HT3SS_RATE(rate))
-		rs = HT_3SS;
-	else if (IS_HT4SS_RATE(rate))
-		rs = HT_4SS;
-	else if (IS_VHT1SS_RATE(rate))
-		rs = VHT_1SS;
-	else if (IS_VHT2SS_RATE(rate))
-		rs = VHT_2SS;
-	else if (IS_VHT3SS_RATE(rate))
-		rs = VHT_3SS;
-	else if (IS_VHT4SS_RATE(rate))
-		rs = VHT_4SS;
-
-	return rs;
-}
 
 static const char *const _rate_section_str[] = {
 	"CCK",
@@ -471,6 +429,7 @@ void rtw_set_supported_rate(u8 *SupportedRates, uint mode)
 void rtw_filter_suppport_rateie(WLAN_BSSID_EX *pbss_network, u8 keep)
 {
 	u8 i, idx = 0, new_rate[NDIS_802_11_LENGTH_RATES_EX], *p;
+	int ret = 0;
 	uint iscck, isofdm, ie_orilen = 0, remain_len;
 	u8 *remain_ies;
 
@@ -725,44 +684,8 @@ int rtw_get_wpa2_cipher_suite(u8 *s)
 	return 0;
 }
 
-u32 rtw_get_akm_suite_bitmap(u8 *s)
-{
-	if (_rtw_memcmp(s, WLAN_AKM_8021X, RSN_SELECTOR_LEN) == _TRUE)
-		return WLAN_AKM_TYPE_8021X;
-	if (_rtw_memcmp(s, WLAN_AKM_PSK, RSN_SELECTOR_LEN) == _TRUE)
-		return WLAN_AKM_TYPE_PSK;
-	if (_rtw_memcmp(s, WLAN_AKM_FT_8021X, RSN_SELECTOR_LEN) == _TRUE)
-		return WLAN_AKM_TYPE_FT_8021X;
-	if (_rtw_memcmp(s, WLAN_AKM_FT_PSK, RSN_SELECTOR_LEN) == _TRUE)
-		return WLAN_AKM_TYPE_FT_PSK;
-	if (_rtw_memcmp(s, WLAN_AKM_8021X_SHA256, RSN_SELECTOR_LEN) == _TRUE)
-		return WLAN_AKM_TYPE_8021X_SHA256;
-	if (_rtw_memcmp(s, WLAN_AKM_PSK_SHA256, RSN_SELECTOR_LEN) == _TRUE)
-		return WLAN_AKM_TYPE_PSK_SHA256;
-	if (_rtw_memcmp(s, WLAN_AKM_TDLS, RSN_SELECTOR_LEN) == _TRUE)
-		return WLAN_AKM_TYPE_TDLS;
-	if (_rtw_memcmp(s, WLAN_AKM_SAE, RSN_SELECTOR_LEN) == _TRUE)
-		return WLAN_AKM_TYPE_SAE;
-	if (_rtw_memcmp(s, WLAN_AKM_FT_OVER_SAE, RSN_SELECTOR_LEN) == _TRUE)
-		return WLAN_AKM_TYPE_FT_OVER_SAE;
-	if (_rtw_memcmp(s, WLAN_AKM_8021X_SUITE_B, RSN_SELECTOR_LEN) == _TRUE)
-		return WLAN_AKM_TYPE_8021X_SUITE_B;
-	if (_rtw_memcmp(s, WLAN_AKM_8021X_SUITE_B_192, RSN_SELECTOR_LEN) == _TRUE)
-		return WLAN_AKM_TYPE_8021X_SUITE_B_192;
-	if (_rtw_memcmp(s, WLAN_AKM_FILS_SHA256, RSN_SELECTOR_LEN) == _TRUE)
-		return WLAN_AKM_TYPE_FILS_SHA256;
-	if (_rtw_memcmp(s, WLAN_AKM_FILS_SHA384, RSN_SELECTOR_LEN) == _TRUE)
-		return WLAN_AKM_TYPE_FILS_SHA384;
-	if (_rtw_memcmp(s, WLAN_AKM_FT_FILS_SHA256, RSN_SELECTOR_LEN) == _TRUE)
-		return WLAN_AKM_TYPE_FT_FILS_SHA256;
-	if (_rtw_memcmp(s, WLAN_AKM_FT_FILS_SHA384, RSN_SELECTOR_LEN) == _TRUE)
-		return WLAN_AKM_TYPE_FT_FILS_SHA384;
 
-	return 0;
-}
-
-int rtw_parse_wpa_ie(u8 *wpa_ie, int wpa_ie_len, int *group_cipher,
-	int *pairwise_cipher, u32 *akm)
+int rtw_parse_wpa_ie(u8 *wpa_ie, int wpa_ie_len, int *group_cipher, int *pairwise_cipher, int *is_8021x)
 {
 	int i, ret = _SUCCESS;
 	int left, count;
@@ -821,11 +744,11 @@ int rtw_parse_wpa_ie(u8 *wpa_ie, int wpa_ie_len, int *group_cipher,
 		return _FAIL;
 	}
 
-	if (akm) {
+	if (is_8021x) {
 		if (left >= 6) {
 			pos += 2;
 			if (_rtw_memcmp(pos, SUITE_1X, 4) == 1) {
-				*akm = WLAN_AKM_TYPE_8021X;
+				*is_8021x = 1;
 			}
 		}
 	}
@@ -933,11 +856,11 @@ err:
 	return _FAIL;
 }
 
-int rtw_parse_wpa2_ie(u8 *rsn_ie, int rsn_ie_len, int *group_cipher,
-	int *pairwise_cipher, u32 *akm, u8 *mfp_opt)
+int rtw_parse_wpa2_ie(u8 *rsn_ie, int rsn_ie_len, int *group_cipher, int *pairwise_cipher, int *is_8021x, u8 *mfp_opt)
 {
 	struct rsne_info info;
 	int i, ret = _SUCCESS;
+	u8 SUITE_1X[4] = {0x00, 0x0f, 0xac, 0x01};
 
 	ret = rtw_rsne_info_parse(rsn_ie, rsn_ie_len, &info);
 	if (ret != _SUCCESS)
@@ -956,10 +879,11 @@ int rtw_parse_wpa2_ie(u8 *rsn_ie, int rsn_ie_len, int *group_cipher,
 			*pairwise_cipher |= rtw_get_wpa2_cipher_suite(info.pcs_list + 4 * i);
 	}
 
-	if (akm) {
-		*akm = 0;
-		for (i = 0; i < info.akm_cnt; i++)
-			*akm |= rtw_get_akm_suite_bitmap(info.akm_list + 4 * i);
+	if (is_8021x) {
+		*is_8021x = 0;
+		/* here only check the first AKM suite */
+		if (info.akm_cnt && _rtw_memcmp(SUITE_1X, info.akm_list, 4) == _TRUE)
+			*is_8021x = 1;
 	}
 
 	if (mfp_opt) {
@@ -2774,6 +2698,86 @@ int ieee80211_get_hdrlen(u16 fc)
 	return hdrlen;
 }
 
+int rtw_get_cipher_info(struct wlan_network *pnetwork)
+{
+	u32 wpa_ielen;
+	unsigned char *pbuf;
+	int group_cipher = 0, pairwise_cipher = 0, is8021x = 0;
+	int ret = _FAIL;
+	pbuf = rtw_get_wpa_ie(&pnetwork->network.IEs[12], &wpa_ielen, pnetwork->network.IELength - 12);
+
+	if (pbuf && (wpa_ielen > 0)) {
+		if (_SUCCESS == rtw_parse_wpa_ie(pbuf, wpa_ielen + 2, &group_cipher, &pairwise_cipher, &is8021x)) {
+
+			pnetwork->BcnInfo.pairwise_cipher = pairwise_cipher;
+			pnetwork->BcnInfo.group_cipher = group_cipher;
+			pnetwork->BcnInfo.is_8021x = is8021x;
+			ret = _SUCCESS;
+		}
+	} else {
+
+		pbuf = rtw_get_wpa2_ie(&pnetwork->network.IEs[12], &wpa_ielen, pnetwork->network.IELength - 12);
+
+		if (pbuf && (wpa_ielen > 0)) {
+			if (_SUCCESS == rtw_parse_wpa2_ie(pbuf, wpa_ielen + 2, &group_cipher, &pairwise_cipher, &is8021x, NULL)) {
+				pnetwork->BcnInfo.pairwise_cipher = pairwise_cipher;
+				pnetwork->BcnInfo.group_cipher = group_cipher;
+				pnetwork->BcnInfo.is_8021x = is8021x;
+				ret = _SUCCESS;
+			}
+		}
+	}
+
+	return ret;
+}
+
+void rtw_get_bcn_info(struct wlan_network *pnetwork)
+{
+	unsigned short cap = 0;
+	u8 bencrypt = 0;
+	/* u8 wpa_ie[255],rsn_ie[255]; */
+	u16 wpa_len = 0, rsn_len = 0;
+	struct HT_info_element *pht_info = NULL;
+	struct rtw_ieee80211_ht_cap *pht_cap = NULL;
+	unsigned int		len;
+	unsigned char		*p;
+
+	_rtw_memcpy((u8 *)&cap, rtw_get_capability_from_ie(pnetwork->network.IEs), 2);
+	cap = le16_to_cpu(cap);
+	if (cap & WLAN_CAPABILITY_PRIVACY) {
+		bencrypt = 1;
+		pnetwork->network.Privacy = 1;
+	} else
+		pnetwork->BcnInfo.encryp_protocol = ENCRYP_PROTOCOL_OPENSYS;
+	rtw_get_sec_ie(pnetwork->network.IEs , pnetwork->network.IELength, NULL, &rsn_len, NULL, &wpa_len);
+
+	if (rsn_len > 0)
+		pnetwork->BcnInfo.encryp_protocol = ENCRYP_PROTOCOL_WPA2;
+	else if (wpa_len > 0)
+		pnetwork->BcnInfo.encryp_protocol = ENCRYP_PROTOCOL_WPA;
+	else {
+		if (bencrypt)
+			pnetwork->BcnInfo.encryp_protocol = ENCRYP_PROTOCOL_WEP;
+	}
+	rtw_get_cipher_info(pnetwork);
+
+	/* get bwmode and ch_offset */
+	/* parsing HT_CAP_IE */
+	p = rtw_get_ie(pnetwork->network.IEs + _FIXED_IE_LENGTH_, _HT_CAPABILITY_IE_, &len, pnetwork->network.IELength - _FIXED_IE_LENGTH_);
+	if (p && len > 0) {
+		pht_cap = (struct rtw_ieee80211_ht_cap *)(p + 2);
+		pnetwork->BcnInfo.ht_cap_info = pht_cap->cap_info;
+	} else
+		pnetwork->BcnInfo.ht_cap_info = 0;
+	/* parsing HT_INFO_IE */
+	p = rtw_get_ie(pnetwork->network.IEs + _FIXED_IE_LENGTH_, _HT_ADD_INFO_IE_, &len, pnetwork->network.IELength - _FIXED_IE_LENGTH_);
+	if (p && len > 0) {
+		pht_info = (struct HT_info_element *)(p + 2);
+		pnetwork->BcnInfo.ht_info_infos_0 = pht_info->infos[0];
+	} else
+		pnetwork->BcnInfo.ht_info_infos_0 = 0;
+}
+
 u8	rtw_ht_mcsset_to_nss(u8 *supp_mcs_set)
 {
 	u8 nss = 1;
@@ -2807,7 +2811,7 @@ u32	rtw_ht_mcs_set_to_bitmap(u8 *mcs_set, u8 nss)
 }
 
 /* show MCS rate, unit: 100Kbps */
-u16 rtw_ht_mcs_rate(u8 bw_40MHz, u8 short_GI, unsigned char *MCS_rate)
+u16 rtw_mcs_rate(u8 rf_type, u8 bw_40MHz, u8 short_GI, unsigned char *MCS_rate)
 {
 	u16 max_rate = 0;
 

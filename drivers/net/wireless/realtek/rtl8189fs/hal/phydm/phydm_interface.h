@@ -309,8 +309,9 @@ void odm_efuse_logical_map_read(struct dm_struct *dm, u8 type, u16 offset,
 enum hal_status
 odm_iq_calibrate_by_fw(struct dm_struct *dm, u8 clear, u8 segment);
 
-enum hal_status
-odm_dpk_by_fw(struct dm_struct *dm);
+void odm_cmn_info_ptr_array_hook(struct dm_struct *dm,
+				 enum odm_cmninfo cmn_info, u16 index,
+				 void *value);
 
 void phydm_cmn_sta_info_hook(struct dm_struct *dm, u8 index,
 			     struct cmn_sta_info *pcmn_sta_info);

@@ -110,6 +110,14 @@
 	#define CONFIG_USB_VENDOR_REQ_MUTEX
 #endif
 
+#if defined(CONFIG_DFS_SLAVE_WITH_RADAR_DETECT) && !defined(CONFIG_DFS_MASTER)
+	#define CONFIG_DFS_MASTER
+#endif
+
+#if !defined(CONFIG_AP_MODE) && defined(CONFIG_DFS_MASTER)
+	#error "enable CONFIG_DFS_MASTER without CONFIG_AP_MODE"
+#endif
+
 #ifdef CONFIG_WIFI_MONITOR
 	/*	#define CONFIG_MONITOR_MODE_XMIT	*/
 #endif
@@ -117,6 +125,9 @@
 #ifdef CONFIG_CUSTOMER_ALIBABA_GENERAL
 	#ifndef CONFIG_WIFI_MONITOR
 		#define CONFIG_WIFI_MONITOR
+	#endif
+	#ifndef CONFIG_MONITOR_MODE_XMIT
+		#define CONFIG_MONITOR_MODE_XMIT
 	#endif
 	#ifdef CONFIG_POWER_SAVING
 		#undef CONFIG_POWER_SAVING
@@ -133,7 +144,6 @@
 #endif
 
 #ifdef CONFIG_AP_MODE
-	#define CONFIG_LIMITED_AP_NUM 1
 	#define CONFIG_TX_MCAST2UNI /* AP mode support IP multicast->unicast */
 #endif
 
@@ -219,36 +229,8 @@
 	#define CONFIG_RTW_EXCL_CHS {0}
 #endif
 
-#ifndef CONFIG_IEEE80211_BAND_5GHZ
-	#if defined(CONFIG_RTL8821A) || defined(CONFIG_RTL8821C) \
-		|| defined(CONFIG_RTL8812A) || defined(CONFIG_RTL8822B) || defined(CONFIG_RTL8822C) \
-		|| defined(CONFIG_RTL8814A) || defined(CONFIG_RTL8814B)
-	#define CONFIG_IEEE80211_BAND_5GHZ 1
-	#else
-	#define CONFIG_IEEE80211_BAND_5GHZ 0
-	#endif
-#endif
-
-#ifndef CONFIG_DFS
-#define CONFIG_DFS 1
-#endif
-
-#if CONFIG_IEEE80211_BAND_5GHZ && CONFIG_DFS && defined(CONFIG_AP_MODE)
-	#if !defined(CONFIG_DFS_SLAVE_WITH_RADAR_DETECT)
-	#define CONFIG_DFS_SLAVE_WITH_RADAR_DETECT 0
-	#endif
-	#if !defined(CONFIG_DFS_MASTER) || CONFIG_DFS_SLAVE_WITH_RADAR_DETECT
-	#define CONFIG_DFS_MASTER
-	#endif
-	#if defined(CONFIG_DFS_MASTER) && !defined(CONFIG_RTW_DFS_REGION_DOMAIN)
+#ifndef CONFIG_RTW_DFS_REGION_DOMAIN
 	#define CONFIG_RTW_DFS_REGION_DOMAIN 0
-	#endif
-#else
-	#undef CONFIG_DFS_MASTER
-	#undef CONFIG_RTW_DFS_REGION_DOMAIN
-	#define CONFIG_RTW_DFS_REGION_DOMAIN 0
-	#undef CONFIG_DFS_SLAVE_WITH_RADAR_DETECT
-	#define CONFIG_DFS_SLAVE_WITH_RADAR_DETECT 0
 #endif
 
 #ifndef CONFIG_TXPWR_BY_RATE_EN
@@ -297,9 +279,9 @@
 	#define CONFIG_TXPWR_BY_RATE_EN 1
 	#define CONFIG_RTW_CUSTOMIZE_BEEDCA		0x0000431C
 	#define CONFIG_RTW_CUSTOMIZE_BWMODE		0x00
-	#define CONFIG_RTW_CUSTOMIZE_RLSTA		0x30
+	#define CONFIG_RTW_CUSTOMIZE_RLSTA		0x7
 #if defined(CONFIG_RTL8192E) || defined(CONFIG_RTL8192F) || defined(CONFIG_RTL8822B)
-	#define CONFIG_RTW_TX_NPATH_EN		/*	mutually incompatible with STBC_TX & Beamformer	*/
+	#define CONFIG_RTW_TX_2PATH_EN		/*	mutually incompatible with STBC_TX & Beamformer	*/
 #endif
 #endif
 /*#define CONFIG_EXTEND_LOWRATE_TXOP			*/
@@ -387,32 +369,6 @@
 	#error "CONFIG_IFACE_NUMBER cound not be 0 !!"
 #endif
 
-#if defined(CONFIG_RTL8188E) || defined(CONFIG_RTL8192E) || defined(CONFIG_RTL8188F) || \
-defined(CONFIG_RTL8188GTV) || defined(CONFIG_RTL8192F) || \
-defined(CONFIG_RTL8812A) || defined(CONFIG_RTL8821A) || defined(CONFIG_RTL8710B) || \
-defined(CONFIG_RTL8723B) || defined(CONFIG_RTL8703B) || defined(CONFIG_RTL8723D)
-#define CONFIG_HWMPCAP_GEN1
-#elif defined(CONFIG_RTL8822B) || defined(CONFIG_RTL8821C) || defined(CONFIG_RTL8822C) /*|| defined(CONFIG_RTL8814A)*/
-#define CONFIG_HWMPCAP_GEN2
-#elif defined(CONFIG_RTL8814B) /*Address CAM - 128*/
-#define CONFIG_HWMPCAP_GEN3
-#endif
-
-#if defined(CONFIG_HWMPCAP_GEN1) && (CONFIG_IFACE_NUMBER > 2) 
-	#ifdef CONFIG_POWER_SAVING
-	/*#warning "Disable PS when CONFIG_IFACE_NUMBER > 2"*/
-	#undef CONFIG_POWER_SAVING
-	#endif
-
-	#ifdef CONFIG_WOWLAN
-	#error "This IC can't support MI and WoWLan at the same time"
-	#endif
-#endif
-
-#if defined(CONFIG_HWMPCAP_GEN1) && (CONFIG_IFACE_NUMBER > 3)
-        #error " This IC can't support over 3 interfaces !!"
-#endif
-
 #if (CONFIG_IFACE_NUMBER > 4)
 	#error "Not support over 4 interfaces yet !!"
 #endif
@@ -432,37 +388,38 @@ defined(CONFIG_RTL8723B) || defined(CONFIG_RTL8703B) || defined(CONFIG_RTL8723D)
 	#endif
 
 	#ifdef CONFIG_AP_MODE
-		#undef CONFIG_LIMITED_AP_NUM
-		#define CONFIG_LIMITED_AP_NUM	2
-
 		#define CONFIG_SUPPORT_MULTI_BCN
 
 		#define CONFIG_SWTIMER_BASED_TXBCN
 
-		#ifdef CONFIG_HWMPCAP_GEN2 /*CONFIG_RTL8822B/CONFIG_RTL8821C/CONFIG_RTL8822C*/
+		#if defined(CONFIG_RTL8822B) || defined(CONFIG_RTL8821C) /* || defined(CONFIG_RTL8822C)*/
 		#define CONFIG_FW_HANDLE_TXBCN
 
 		#ifdef CONFIG_FW_HANDLE_TXBCN
 			#ifdef CONFIG_SWTIMER_BASED_TXBCN
 				#undef CONFIG_SWTIMER_BASED_TXBCN
 			#endif
-			#undef CONFIG_LIMITED_AP_NUM
+
 			#define CONFIG_LIMITED_AP_NUM	4
 		#endif
-
-		#endif /*CONFIG_HWMPCAP_GEN2*/
+	#endif /*defined(CONFIG_RTL8822B) || defined(CONFIG_RTL8821C) */ /*|| defined(CONFIG_RTL8822C)*/
 	#endif /*CONFIG_AP_MODE*/
 
-	#ifdef CONFIG_HWMPCAP_GEN2 /*CONFIG_RTL8822B/CONFIG_RTL8821C/CONFIG_RTL8822C*/
+	#if defined(CONFIG_RTL8822B) || defined(CONFIG_RTL8821C) || defined(CONFIG_RTL8822C)
 	#define CONFIG_CLIENT_PORT_CFG
 	#define CONFIG_NEW_NETDEV_HDL
-	#endif/*CONFIG_HWMPCAP_GEN2*/
+	#endif/*defined(CONFIG_RTL8822B) || defined(CONFIG_RTL8821C) || defined(CONFIG_RTL8822C)*/
+
 #endif/*(CONFIG_IFACE_NUMBER > 2)*/
 
 #define MACID_NUM_SW_LIMIT 32
 #define SEC_CAM_ENT_NUM_SW_LIMIT 32
 
-#if defined(CONFIG_WOWLAN) && (defined(CONFIG_RTL8822B) || defined(CONFIG_RTL8821C) || defined(CONFIG_RTL8814A) || defined(CONFIG_RTL8822C) || defined(CONFIG_RTL8814B))
+#if defined(CONFIG_RTL8812A) || defined(CONFIG_RTL8821A) || defined(CONFIG_RTL8814A)
+	#define CONFIG_IEEE80211_BAND_5GHZ
+#endif
+
+#if defined(CONFIG_WOWLAN) && (defined(CONFIG_RTL8822B) || defined(CONFIG_RTL8821C) || defined(CONFIG_RTL8814A) || defined(CONFIG_RTL8822C))
 	#define CONFIG_WOW_PATTERN_HW_CAM
 #endif
 
@@ -601,11 +558,6 @@ defined(CONFIG_RTL8723B) || defined(CONFIG_RTL8703B) || defined(CONFIG_RTL8723D)
 
 #ifndef CONFIG_PCI_MSI
 #define CONFIG_RTW_PCI_MSI_DISABLE
-#endif
-
-#if defined(CONFIG_PCI_DYNAMIC_ASPM_L1_LATENCY) ||	\
-    defined(CONFIG_PCI_DYNAMIC_ASPM_LINK_CTRL)
-#define CONFIG_PCI_DYNAMIC_ASPM
 #endif
 
 #endif /* __DRV_CONF_H__ */
