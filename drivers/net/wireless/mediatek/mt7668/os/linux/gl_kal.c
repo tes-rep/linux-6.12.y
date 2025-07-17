@@ -71,8 +71,6 @@
 ********************************************************************************
 */
 #include "gl_os.h"
-#include <linux/version.h>
-#include <linux/netdevice.h>
 #include "gl_kal.h"
 #include "gl_wext.h"
 #include "precomp.h"
@@ -1566,7 +1564,7 @@ kalHardStartXmit(struct sk_buff *prOrgSkb, IN struct net_device *prDev, P_GLUE_I
 
 
 	if(prOrgSkb->len>1500){
-		pr_info(":%s[%d]TOOBIG\n",__func__,prOrgSkb->len);
+		pr_info("DEVMFC:%s[%d]TOOBIG\n",__func__,prOrgSkb->len);
 		//WARN_ON(1);
 	}
 	
@@ -5261,7 +5259,7 @@ kalSetNetAddress(IN P_GLUE_INFO_T prGlueInfo,
 	P_PARAM_NETWORK_ADDRESS prParamNetAddr;
 	UINT_32 i, u4AddrLen;
 
-	pr_info("%s ucBssIdx [%d] \n",__func__,ucBssIdx);
+	pr_info("DEVMFC: %s ucBssIdx [%d] \n",__func__,ucBssIdx);
 
 	/* 4 <1> Calculate buffer size */
 	/* IPv4 */
@@ -6721,23 +6719,11 @@ VOID kalIndicateChannelSwitch(IN P_GLUE_INFO_T prGlueInfo,
 	cfg80211_chandef_create(&chandef, prChannel, rChannelType);
 
 	#if (LINUX_VERSION_CODE < KERNEL_VERSION(5, 19, 2))
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(5,15,0)
-    cfg80211_ch_switch_notify(prGlueInfo->prDevHandler);
-#else
-    cfg80211_ch_switch_notify(prGlueInfo->prDevHandler, &chandef, 0, GFP_KERNEL);
-#endif
+	cfg80211_ch_switch_notify(prGlueInfo->prDevHandler, &chandef);
 	#elif (LINUX_VERSION_CODE < KERNEL_VERSION(6, 3, 0))
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(5,15,0)
-    cfg80211_ch_switch_notify(prGlueInfo->prDevHandler);
-#else
-    cfg80211_ch_switch_notify(prGlueInfo->prDevHandler, &chandef, 0, GFP_KERNEL);
-#endif
+		cfg80211_ch_switch_notify(prGlueInfo->prDevHandler, &chandef, 0);
 	#else
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(5,15,0)
-    cfg80211_ch_switch_notify(prGlueInfo->prDevHandler);
-#else
-    cfg80211_ch_switch_notify(prGlueInfo->prDevHandler, &chandef, 0, GFP_KERNEL);
-#endif
+		cfg80211_ch_switch_notify(prGlueInfo->prDevHandler, &chandef, 0, 0);
 	#endif
 
 	
@@ -6756,7 +6742,7 @@ VOID kalInitDevWakeup(P_ADAPTER_T prAdapter, struct device *prDev)
 		device_init_wakeup(prDev, TRUE);
 }
 
-#if 0 /*  */
+#if 0 /* DEVMFC */
 
 unsigned long kal_kallsyms_lookup_name(const char *name)
 {
