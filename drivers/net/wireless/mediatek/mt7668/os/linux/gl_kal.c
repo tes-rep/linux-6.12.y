@@ -71,6 +71,8 @@
 ********************************************************************************
 */
 #include "gl_os.h"
+#include <linux/version.h>
+#include <linux/netdevice.h>
 #include "gl_kal.h"
 #include "gl_wext.h"
 #include "precomp.h"
@@ -6719,11 +6721,23 @@ VOID kalIndicateChannelSwitch(IN P_GLUE_INFO_T prGlueInfo,
 	cfg80211_chandef_create(&chandef, prChannel, rChannelType);
 
 	#if (LINUX_VERSION_CODE < KERNEL_VERSION(5, 19, 2))
-cfg80211_ch_switch_notify(prGlueInfo->prDevHandler);
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5,15,0)
+    cfg80211_ch_switch_notify(prGlueInfo->prDevHandler);
+#else
+    cfg80211_ch_switch_notify(prGlueInfo->prDevHandler, &chandef, 0, GFP_KERNEL);
+#endif
 	#elif (LINUX_VERSION_CODE < KERNEL_VERSION(6, 3, 0))
-cfg80211_ch_switch_notify(prGlueInfo->prDevHandler);
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5,15,0)
+    cfg80211_ch_switch_notify(prGlueInfo->prDevHandler);
+#else
+    cfg80211_ch_switch_notify(prGlueInfo->prDevHandler, &chandef, 0, GFP_KERNEL);
+#endif
 	#else
-cfg80211_ch_switch_notify(prGlueInfo->prDevHandler);
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5,15,0)
+    cfg80211_ch_switch_notify(prGlueInfo->prDevHandler);
+#else
+    cfg80211_ch_switch_notify(prGlueInfo->prDevHandler, &chandef, 0, GFP_KERNEL);
+#endif
 	#endif
 
 	
