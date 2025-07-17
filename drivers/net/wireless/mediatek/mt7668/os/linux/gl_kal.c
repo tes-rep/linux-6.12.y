@@ -1564,7 +1564,7 @@ kalHardStartXmit(struct sk_buff *prOrgSkb, IN struct net_device *prDev, P_GLUE_I
 
 
 	if(prOrgSkb->len>1500){
-		pr_info("DEVMFC:%s[%d]TOOBIG\n",__func__,prOrgSkb->len);
+		pr_info(":%s[%d]TOOBIG\n",__func__,prOrgSkb->len);
 		//WARN_ON(1);
 	}
 	
@@ -5259,7 +5259,7 @@ kalSetNetAddress(IN P_GLUE_INFO_T prGlueInfo,
 	P_PARAM_NETWORK_ADDRESS prParamNetAddr;
 	UINT_32 i, u4AddrLen;
 
-	pr_info("DEVMFC: %s ucBssIdx [%d] \n",__func__,ucBssIdx);
+	pr_info("%s ucBssIdx [%d] \n",__func__,ucBssIdx);
 
 	/* 4 <1> Calculate buffer size */
 	/* IPv4 */
@@ -6742,7 +6742,7 @@ VOID kalInitDevWakeup(P_ADAPTER_T prAdapter, struct device *prDev)
 		device_init_wakeup(prDev, TRUE);
 }
 
-#if 0 /* DEVMFC */
+#if 0 /*  */
 
 unsigned long kal_kallsyms_lookup_name(const char *name)
 {
