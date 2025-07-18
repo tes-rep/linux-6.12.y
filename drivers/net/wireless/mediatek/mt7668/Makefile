@@ -3,7 +3,12 @@
 ##############################################################
 # Common settings
 ##############################################################
-LINUX_SRC=/lib/modules/$(shell uname -r)/build
+export LINUX_SRC=/lib/modules/$(shell uname -r)/build
+export ARCH=arm64
+export CROSS_COMPILE=aarch64-none-linux-gnu-
+
+make -C $LINUX_SRC M=$PWD modules
+
 export MTK_COMBO_CHIP=MT7668
 export HIF=sdio
 export CONFIG_MTK_WIFI_ONLY=m
