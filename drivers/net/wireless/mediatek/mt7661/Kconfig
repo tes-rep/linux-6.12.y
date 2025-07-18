@@ -1,0 +1,13 @@
+menu "Mediatek MT7661S (SDIO) support"
+
+config MT7661_COMBO_CHIP
+	string "MTK COMBO CHIP"
+	default "MT7663"
+        help
+          This is MT7663S without CR4 chip integrated.
+	
+config MT7661_WIFI_ONLY
+	tristate "MTK WIFI ONLY"
+	default m
+
+endmenu
