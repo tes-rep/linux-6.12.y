@@ -4905,7 +4905,7 @@ void kalAcquireWDevMutex(IN struct net_device *pDev)
 	ASSERT(pDev);
 
 	DBGLOG(INIT, TEMP, "WDEV_LOCK Try to acquire\n");
-#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 12, 0)
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 7, 0)
 	mutex_lock(&(pDev->ieee80211_ptr)->mtx);
 #else
 	wiphy_lock(pDev->ieee80211_ptr->wiphy);
@@ -4926,8 +4926,7 @@ void kalAcquireWDevMutex(IN struct net_device *pDev)
 void kalReleaseWDevMutex(IN struct net_device *pDev)
 {
 	ASSERT(pDev);
-	
-#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 12, 0)
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 7, 0)
 	mutex_unlock(&(pDev->ieee80211_ptr)->mtx);
 #else
 	wiphy_unlock(pDev->ieee80211_ptr->wiphy);
@@ -5029,7 +5028,7 @@ static void kalProcessCfg80211TxPkt(struct PARAM_CFG80211_REQ *prCfg80211Req)
 static void kalProcessCfg80211RxPkt(struct PARAM_CFG80211_REQ *prCfg80211Req)
 {
 
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(6, 12, 0))
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(6, 7, 0))
 	struct cfg80211_rx_assoc_resp_data resp = {
 		.uapsd_queues = -1,
 	};
@@ -6719,13 +6718,11 @@ VOID kalIndicateChannelSwitch(IN P_GLUE_INFO_T prGlueInfo,
 
 	cfg80211_chandef_create(&chandef, prChannel, rChannelType);
 
-	#if (LINUX_VERSION_CODE < KERNEL_VERSION(5, 19, 2))
+	#if (LINUX_VERSION_CODE < KERNEL_VERSION(6, 1, 0))
 	cfg80211_ch_switch_notify(prGlueInfo->prDevHandler, &chandef);
-	#elif (LINUX_VERSION_CODE < KERNEL_VERSION(6, 3, 0))
-		cfg80211_ch_switch_notify(prGlueInfo->prDevHandler, &chandef, 0);
-	#else
-		cfg80211_ch_switch_notify(prGlueInfo->prDevHandler, &chandef, 0, 0);
-	#endif
+#else
+	cfg80211_ch_switch_notify(prGlueInfo->prDevHandler);
+#endif
 
 	
 }
