@@ -5,7 +5,7 @@
 # wlan_mt7668_usb.ko:
 # 	make -f Makefile.x86 WLAN_CHIP_ID=mt7668
 
-LINUX_SRC=/lib/modules/$(shell uname -r)/build
+LINUX_SRC=/lib/modules/6.12.39/build
 WLAN_CHIP_ID := MT6632
 
 export CONFIG_MTK_COMBO_PLATFORM=x86
