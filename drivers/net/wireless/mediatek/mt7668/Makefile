@@ -3,6 +3,7 @@
 ##############################################################
 # Common settings
 ##############################################################
+LINUX_SRC=/lib/modules/$(shell uname -r)/build
 export MTK_COMBO_CHIP=MT7668
 export HIF=sdio
 export CONFIG_MTK_WIFI_ONLY=m
