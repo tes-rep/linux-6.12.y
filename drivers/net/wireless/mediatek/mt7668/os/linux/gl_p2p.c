@@ -320,7 +320,7 @@ static const struct iw_priv_args rP2PIwPrivTable[] = {
 	 {IOCTL_GET_DRIVER, IW_PRIV_TYPE_CHAR | 2000, IW_PRIV_TYPE_CHAR | 2000, "driver"},
 };
 
-
+#if 0
 const struct iw_handler_def mtk_p2p_wext_handler_def = {
 	.num_standard = 0,
 
@@ -335,7 +335,7 @@ const struct iw_handler_def mtk_p2p_wext_handler_def = {
 #endif /* CONFIG_WEXT_PRIV || LINUX_VERSION_CODE <= 2.6.32 */
 	.get_wireless_stats = NULL,
 };
-
+#endif
 
 #ifdef CONFIG_PM
 static const struct wiphy_wowlan_support mtk_p2p_wowlan_support = {
@@ -986,7 +986,7 @@ BOOLEAN glRegisterP2P(P_GLUE_INFO_T prGlueInfo, const char *prDevName, const cha
 		/* 4.3 register callback functions */
 		prGlueInfo->prP2PInfo[i]->prDevHandler->needed_headroom += NIC_TX_HEAD_ROOM;
 		prGlueInfo->prP2PInfo[i]->prDevHandler->netdev_ops = &p2p_netdev_ops;
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(6, 6, 0))
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(6, 1, 0))
 		prGlueInfo->prP2PInfo[i]->prDevHandler->wireless_handlers
 			= &mtk_p2p_wext_handler_def;
 #endif
