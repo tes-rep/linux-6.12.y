@@ -1253,10 +1253,9 @@ VOID p2pFuncDfsSwitchCh(IN P_ADAPTER_T prAdapter, IN P_BSS_INFO_T prBssInfo, IN 
 		0);
 	#else
 		cfg80211_ch_switch_notify(
-    prGlueInfo->prP2PInfo[role_idx]->aprRoleHandler,
-    prGlueInfo->prP2PInfo[role_idx]->chandef,
-    GFP_KERNEL,  // Biasanya GFP_KERNEL untuk alokasi memori
-    0);  // link_id, misalnya 0 jika tidak digunakan
+		prGlueInfo->prP2PInfo[role_idx]->aprRoleHandler,
+		prGlueInfo->prP2PInfo[role_idx]->chandef,
+		0, 0);
 	#endif
 	
 	DBGLOG(P2P, INFO, "p2pFuncDfsSwitchCh: Update to OS Done\n");
