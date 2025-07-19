@@ -1444,7 +1444,7 @@ VOID kalP2PRddDetectUpdate(IN P_GLUE_INFO_T prGlueInfo, IN UINT_8 ucRoleIndex)
 		}
 
 		/* cac start disable for next cac slot if enable in dfs channel */
-		prGlueInfo->prP2PInfo[ucRoleIndex]->prWdev->cac_started = FALSE;
+		// prGlueInfo->prP2PInfo[ucRoleIndex]->prWdev->cac_started = FALSE;
 		DBGLOG(INIT, INFO, "kalP2PRddDetectUpdate: Update to OS\n");
 		cfg80211_radar_event(prGlueInfo->prP2PInfo[ucRoleIndex]->prWdev->wiphy,
 				prGlueInfo->prP2PInfo[ucRoleIndex]->chandef, GFP_KERNEL);
