@@ -1246,7 +1246,7 @@ VOID p2pFuncDfsSwitchCh(IN P_ADAPTER_T prAdapter, IN P_BSS_INFO_T prBssInfo, IN 
 		cfg80211_ch_switch_notify(
 		prGlueInfo->prP2PInfo[role_idx]->aprRoleHandler,
 		prGlueInfo->prP2PInfo[role_idx]->chandef);
-	#elif (LINUX_VERSION_CODE < KERNEL_VERSION(6, 3, 0))
+	#elif (LINUX_VERSION_CODE < KERNEL_VERSION(6, 12, 0))
 		cfg80211_ch_switch_notify(
 		prGlueInfo->prP2PInfo[role_idx]->aprRoleHandler,
 		prGlueInfo->prP2PInfo[role_idx]->chandef,
