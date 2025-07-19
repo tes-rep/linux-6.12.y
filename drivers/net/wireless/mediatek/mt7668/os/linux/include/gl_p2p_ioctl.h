@@ -474,9 +474,11 @@ int mtk_p2p_cfg80211_set_power_mgmt(struct wiphy *wiphy, struct net_device *dev,
 
 #if KERNEL_VERSION(3, 15, 0) <= CFG80211_VERSION_CODE
 int mtk_p2p_cfg80211_start_radar_detection(struct wiphy *wiphy,
-						struct net_device *dev,
-						struct cfg80211_chan_def *chandef,
-						unsigned int cac_time_ms);
+                                           struct net_device *dev,
+                                           struct cfg80211_chan_def *chandef,
+                                           u32 freq,
+                                           int cac_time_ms);
+
 #else
 int mtk_p2p_cfg80211_start_radar_detection(struct wiphy *wiphy,
 						struct net_device *dev,
