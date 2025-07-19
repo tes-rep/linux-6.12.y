@@ -1255,7 +1255,7 @@ VOID p2pFuncDfsSwitchCh(IN P_ADAPTER_T prAdapter, IN P_BSS_INFO_T prBssInfo, IN 
 		cfg80211_ch_switch_notify(
 		prGlueInfo->prP2PInfo[role_idx]->aprRoleHandler,
 		prGlueInfo->prP2PInfo[role_idx]->chandef,
-		0, 0);
+		0);
 	#endif
 	
 	DBGLOG(P2P, INFO, "p2pFuncDfsSwitchCh: Update to OS Done\n");
