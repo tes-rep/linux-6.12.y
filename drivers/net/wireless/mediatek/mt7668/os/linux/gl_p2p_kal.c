@@ -1472,10 +1472,11 @@ VOID kalP2PCacFinishedUpdate(IN P_GLUE_INFO_T prGlueInfo, IN UINT_8 ucRoleIndex)
 #if KERNEL_VERSION(3, 14, 0) <= CFG80211_VERSION_CODE
 	cfg80211_cac_event(prGlueInfo->prP2PInfo[ucRoleIndex]->prDevHandler,
 				prGlueInfo->prP2PInfo[ucRoleIndex]->chandef,
-				NL80211_RADAR_CAC_FINISHED, GFP_KERNEL);
+				NL80211_RADAR_CAC_FINISHED, GFP_KERNEL, 0);
 #else
 	cfg80211_cac_event(prGlueInfo->prP2PInfo[ucRoleIndex]->prDevHandler,
-				NL80211_RADAR_CAC_FINISHED, GFP_KERNEL);
+				prGlueInfo->prP2PInfo[ucRoleIndex]->chandef,
+				NL80211_RADAR_CAC_FINISHED, GFP_KERNEL, 0);
 #endif
 	DBGLOG(INIT, INFO, "kalP2PCacFinishedUpdate: Update to OS Done\n");
 }				/* kalP2PRddDetectUpdate */
