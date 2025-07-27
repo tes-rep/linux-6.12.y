@@ -23,7 +23,7 @@ ccflags-y += -I$(src)/include
 
 ccflags-y += -DCONFIG_LITTLE_ENDIAN
 ccflags-y += -DCONFIG_IOCTL_CFG80211 -DRTW_USE_CFG80211_STA_EVENT
-ccflags-y += -DCONFIG_CONCURRENT_MODE
+#ccflags-y += -DCONFIG_CONCURRENT_MODE
 
 ldflags-y += --strip-debug
 
