@@ -75,16 +75,16 @@
                 regulator-max-microvolt = <1800000>;
         };
 
-	led_power {
-                 compatible = "gpio-leds";
+	vbus_pwr: regulator-vbus_pwr {
+		compatible = "regulator-fixed";
+		regulator-name = "VBUS_PWR";
+		regulator-min-microvolt = <5000000>;
+		regulator-max-microvolt = <5000000>;
+//		vin-supply = <&vcc_5v>;
 
-        led_gpio {
-                 label = "led:power";
-                 gpios = <&gpio GPIOH_6 GPIO_ACTIVE_HIGH>;
-                 default-state = "on";
-    };
-};
-
+		gpio = <&gpio GPIOH_6 GPIO_ACTIVE_HIGH>;
+		enable-active-high;
+	};
 
 	reserved-memory {
 		#address-cells = <2>;
