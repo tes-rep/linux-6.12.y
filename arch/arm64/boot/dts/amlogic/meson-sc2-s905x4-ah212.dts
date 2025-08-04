@@ -84,7 +84,6 @@
 
 		gpio = <&gpio GPIOH_6 GPIO_ACTIVE_HIGH>;
 		enable-active-high;
-                regulator-always-on;
 	};
 
 	reserved-memory {
