@@ -23,6 +23,10 @@ dtb-$(CONFIG_ARCH_MESON) += meson-g12b-a311d-bananapi-m2s.dtb
 dtb-$(CONFIG_ARCH_MESON) += meson-g12b-a311d-cainiao-cniot-core.dtb
 dtb-$(CONFIG_ARCH_MESON) += meson-g12b-a311d-cainiao-lemo-xiaoc.dtb
 dtb-$(CONFIG_ARCH_MESON) += meson-g12b-a311d-khadas-vim3.dtb
+
+dtb-$(CONFIG_ARCH_MESON) += meson-g12b-a311d-khadas-vim3-ts050.dtb
+dtb-$(CONFIG_ARCH_MESON) += meson-g12b-a311d-onethingcloud-oes.dtb
+dtb-$(CONFIG_ARCH_MESON) += meson-g12b-a311d-onethingcloud-oes-rgmii-rx-delay-3000ps.dtb
 dtb-$(CONFIG_ARCH_MESON) += meson-g12b-ali-ct2000.dtb
 dtb-$(CONFIG_ARCH_MESON) += meson-g12b-bananapi-cm4-cm4io.dtb
 dtb-$(CONFIG_ARCH_MESON) += meson-g12b-dreambox-one.dtb
@@ -43,7 +47,10 @@ dtb-$(CONFIG_ARCH_MESON) += meson-g12b-radxa-zero2.dtb
 dtb-$(CONFIG_ARCH_MESON) += meson-g12b-s922x-bananapi-m2s.dtb
 dtb-$(CONFIG_ARCH_MESON) += meson-g12b-s922x-khadas-vim3.dtb
 dtb-$(CONFIG_ARCH_MESON) += meson-g12b-ugoos-am6.dtb
+
 dtb-$(CONFIG_ARCH_MESON) += meson-g12b-ugoos-am6-plus.dtb
+dtb-$(CONFIG_ARCH_MESON) += meson-g12b-oes-plus.dtb
+dtb-$(CONFIG_ARCH_MESON) += meson-g12b-oes-plus-v21.dtb
 dtb-$(CONFIG_ARCH_MESON) += meson-gxbb-beelink-mini-mx.dtb
 dtb-$(CONFIG_ARCH_MESON) += meson-gxbb-beelink-mini-mxiii.dtb
 dtb-$(CONFIG_ARCH_MESON) += meson-gxbb-kii-pro.dtb
