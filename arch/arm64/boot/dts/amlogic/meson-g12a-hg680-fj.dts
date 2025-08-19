@@ -205,3 +205,4 @@ reserved-memory {
     vusb_d-supply = <&vusb_d_reg>;
     vusb_a-supply = <&vusb_a_reg>;
 };
+
