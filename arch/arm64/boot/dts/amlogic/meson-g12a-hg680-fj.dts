@@ -1,7 +1,11 @@
+
+/* @sib0ndt */
+
 // SPDX-License-Identifier: (GPL-2.0+ OR MIT)
 /*
  * Copyright (c) sib0ndt, bluemeda
  */
+
 
 /dts-v1/;
 
@@ -28,7 +32,6 @@
 		regulator-max-microvolt = <5000000>;
 		regulator-always-on;
 	};
-
 	vusb_d_reg: regulator-vusb-d {
 		compatible = "regulator-fixed";
 		regulator-name = "vusb_d";
@@ -68,7 +71,6 @@
 
 	leds {
 		compatible = "gpio-leds";
-
 		power_led {
 			led_name = "power_led";
                         gpios = <&gpio_ao GPIOAO_11 GPIO_ACTIVE_LOW>;
@@ -188,7 +190,6 @@ reserved-memory {
 		opp-hz = /bits/ 64 <1908000000>;
 		opp-microvolt = <1001000>;
 	};
-
 	opp-2016000000 {
 		opp-hz = /bits/ 64 <2016000000>;
 		opp-microvolt = <1021000>;
