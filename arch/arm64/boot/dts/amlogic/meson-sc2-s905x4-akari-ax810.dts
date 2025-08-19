@@ -12,8 +12,8 @@
 #include "meson-sc2.dtsi"
 
 / {
-	model = "Amlogic S905X4";
-	compatible = "amlogic,sc2";
+	model = "Advan AT01 (S905X4)";
+	compatible = "advan,at01", "amlogic,sc2";
 	interrupt-parent = <&gic>;
 	#address-cells = <2>;
 	#size-cells = <2>;
