@@ -14,6 +14,8 @@ dtb-$(CONFIG_ARCH_MESON) += meson-axg-s400.dtb
 dtb-$(CONFIG_ARCH_MESON) += meson-g12a-fbx8am-brcm.dtb
 dtb-$(CONFIG_ARCH_MESON) += meson-g12a-fbx8am-realtek.dtb
 dtb-$(CONFIG_ARCH_MESON) += meson-g12a-hg680-fj.dtb
+dtb-$(CONFIG_ARCH_MESON) += meson-g12a-hg680-fj-ngl.dtb
+dtb-$(CONFIG_ARCH_MESON) += meson-g12a-hg680-fj-fcl.dtb
 dtb-$(CONFIG_ARCH_MESON) += meson-g12a-radxa-zero.dtb
 dtb-$(CONFIG_ARCH_MESON) += meson-g12a-s905l3a-cm311.dtb
 dtb-$(CONFIG_ARCH_MESON) += meson-g12a-s905l3a-e900v22c.dtb
@@ -163,13 +165,7 @@ dtb-$(CONFIG_ARCH_MESON) += meson-sm1-x96-max-plus-ip1001m.dtb
 dtb-$(CONFIG_ARCH_MESON) += meson-sm1-x96-max-plus-oc.dtb
 dtb-$(CONFIG_ARCH_MESON) += meson-sm1-x96-max-plus-q1.dtb
 dtb-$(CONFIG_ARCH_MESON) += meson-sm1-x96-max-plus-q2.dtb
+CONFIG_ARCH_MESON) += meson-sc2-s905x4-ah212.dtb
+dtb-$(CONFIG_ARCH_MESON) += meson-sc2-s905x4-gbit.dtb
+dtb-$(CONFIG_ARCH_MESON) += meson-sc2-s905x4-akari-ax810.dtb
 
-# Overlays
-meson-g12a-fbx8am-brcm-dtbs	:= meson-g12a-fbx8am.dtb meson-g12a-fbx8am-brcm.dtbo
-meson-g12a-fbx8am-realtek-dtbs	:= meson-g12a-fbx8am.dtb meson-g12a-fbx8am-realtek.dtbo
-meson-g12b-a311d-khadas-vim3-ts050-dtbs := meson-g12b-a311d-khadas-vim3.dtb meson-khadas-vim3-ts050.dtbo
-meson-sm1-khadas-vim3l-ts050-dtbs	:= meson-sm1-khadas-vim3l.dtb meson-khadas-vim3-ts050.dtbo
-
-# Experimental
-dtb-$(CONFIG_ARCH_MESON) += meson-gxbb-odroidc2-hifishield.dtb
-dtb-$(CONFIG_ARCH_MESON) += meson-gxbb-odroidc2-hifishield2.dtb
