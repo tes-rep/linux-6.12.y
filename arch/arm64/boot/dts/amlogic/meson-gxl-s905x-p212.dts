@@ -11,7 +11,7 @@
 
 / {
 	compatible = "amlogic,p212", "amlogic,s905x", "amlogic,meson-gxl";
-	model = "Amlogic Meson GXL (S905X) P212 Development Board";
+	model = "HG680P ✧ s905x";
 
 	dio2133: analog-amplifier {
 		compatible = "simple-audio-amplifier";
