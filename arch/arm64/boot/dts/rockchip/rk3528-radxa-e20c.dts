@@ -286,9 +286,14 @@
 };
 
 &mdio1 {
+	/* Motorcomm YT8531 (Rockchip RK631) */
 	rgmii_phy: ethernet-phy@1 {
 		compatible = "ethernet-phy-ieee802.3-c22";
 		reg = <0x1>;
+
+		motorcomm,yt8531-led0-cfg = <0x0000>;  /* LED0: Disabled */
+		motorcomm,yt8531-led1-cfg = <0x2600>;  /* LED1(G): Activity */
+		motorcomm,yt8531-led2-cfg = <0x0070>;  /* LED2(Y): Link - 10/100/1000M */
 	};
 };
 

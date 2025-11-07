@@ -9,6 +9,7 @@
 #include <dt-bindings/interrupt-controller/irq.h>
 #include <dt-bindings/phy/phy.h>
 #include <dt-bindings/pinctrl/rockchip.h>
+#include <dt-bindings/thermal/thermal.h>
 #include <dt-bindings/clock/rockchip,rk3528-cru.h>
 #include <dt-bindings/power/rockchip,rk3528-power.h>
 #include <dt-bindings/reset/rockchip,rk3528-cru.h>
@@ -55,6 +56,7 @@
 			device_type = "cpu";
 			enable-method = "psci";
 			clocks = <&scmi_clk SCMI_CLK_CPU>;
+			#cooling-cells = <2>;
 			operating-points-v2 = <&cpu_opp_table>;
 		};
 
@@ -64,6 +66,7 @@
 			device_type = "cpu";
 			enable-method = "psci";
 			clocks = <&scmi_clk SCMI_CLK_CPU>;
+			#cooling-cells = <2>;
 			operating-points-v2 = <&cpu_opp_table>;
 		};
 
@@ -73,6 +76,7 @@
 			device_type = "cpu";
 			enable-method = "psci";
 			clocks = <&scmi_clk SCMI_CLK_CPU>;
+			#cooling-cells = <2>;
 			operating-points-v2 = <&cpu_opp_table>;
 		};
 
@@ -82,6 +86,7 @@
 			device_type = "cpu";
 			enable-method = "psci";
 			clocks = <&scmi_clk SCMI_CLK_CPU>;
+			#cooling-cells = <2>;
 			operating-points-v2 = <&cpu_opp_table>;
 		};
 	};
@@ -252,6 +257,51 @@
 			compatible = "arm,scmi-shmem";
 			reg = <0x0 0x0010f000 0x0 0x100>;
 			no-map;
+		};
+	};
+
+	thermal-zones {
+		soc_thermal: soc-thermal {
+			polling-delay-passive = <20>;
+			polling-delay = <1000>;
+			sustainable-power = <638>;
+			thermal-sensors = <&tsadc 0>;
+
+			trips {
+				threshold: trip-point-0 {
+					temperature = <70000>;
+					hysteresis = <2000>;
+					type = "passive";
+				};
+				target: trip-point-1 {
+					temperature = <85000>;
+					hysteresis = <2000>;
+					type = "passive";
+				};
+				soc_crit: soc-crit {
+					temperature = <95000>;
+					hysteresis = <2000>;
+					type = "critical";
+				};
+			};
+
+			cooling-maps {
+				map0 {
+					trip = <&target>;
+					cooling-device =
+						<&cpu0 THERMAL_NO_LIMIT THERMAL_NO_LIMIT>,
+						<&cpu1 THERMAL_NO_LIMIT THERMAL_NO_LIMIT>,
+						<&cpu2 THERMAL_NO_LIMIT THERMAL_NO_LIMIT>,
+						<&cpu3 THERMAL_NO_LIMIT THERMAL_NO_LIMIT>;
+					contribution = <2048>;
+				};
+				map1 {
+					trip = <&target>;
+					cooling-device =
+						<&gpu THERMAL_NO_LIMIT THERMAL_NO_LIMIT>;
+					contribution = <1024>;
+				};
+			};
 		};
 	};
 
@@ -688,6 +738,7 @@
 			assigned-clock-rates = <297000000>, <300000000>;
 			clocks = <&cru ACLK_GPU_MALI>, <&scmi_clk SCMI_CLK_GPU>;
 			clock-names = "bus", "core";
+			#cooling-cells = <2>;
 			interrupts = <GIC_SPI 88 IRQ_TYPE_LEVEL_HIGH>,
 				     <GIC_SPI 89 IRQ_TYPE_LEVEL_HIGH>,
 				     <GIC_SPI 86 IRQ_TYPE_LEVEL_HIGH>,
@@ -706,6 +757,29 @@
 			power-domains = <&power RK3528_PD_GPU>;
 			resets = <&cru SRST_A_GPU>;
 			status = "disabled";
+		};
+
+		vpu: video-codec@ff7c0000 {
+			compatible = "rockchip,rk3528-vpu",
+				     "rockchip,rk3568-vpu";
+			reg = <0x0 0xff7c0000 0x0 0x800>;
+			clocks = <&cru ACLK_VPU>, <&cru HCLK_VPU>;
+			clock-names = "aclk", "hclk";
+			interrupts = <GIC_SPI 98 IRQ_TYPE_LEVEL_HIGH>;
+			interrupt-names = "vdpu";
+			iommus = <&vpu_mmu>;
+			power-domains = <&power RK3528_PD_VPU>;
+		};
+
+		vpu_mmu: iommu@ff7c0800 {
+			compatible = "rockchip,rk3528-iommu",
+				     "rockchip,rk3568-iommu";
+			reg = <0x0 0xff7c0800 0x0 0x40>;
+			clocks = <&cru ACLK_VPU>, <&cru HCLK_VPU>;
+			clock-names = "aclk", "iface";
+			interrupts = <GIC_SPI 99 IRQ_TYPE_LEVEL_HIGH>;
+			#iommu-cells = <0>;
+			power-domains = <&power RK3528_PD_VPU>;
 		};
 
 		spi0: spi@ff9c0000 {
@@ -1030,6 +1104,33 @@
 			status = "disabled";
 		};
 
+		tsadc: tsadc@ffad0000 {
+			compatible = "rockchip,rk3528-tsadc";
+			reg = <0x0 0xffad0000 0x0 0x400>;
+			assigned-clocks = <&cru CLK_TSADC>, <&cru CLK_TSADC_TSEN>;
+			assigned-clock-rates = <1200000>, <12000000>;
+			clocks = <&cru CLK_TSADC>, <&cru PCLK_TSADC>,
+				 <&cru CLK_TSADC_TSEN>;
+			clock-names = "tsadc", "apb_pclk", "tsen";
+			interrupts = <GIC_SPI 139 IRQ_TYPE_LEVEL_HIGH>;
+			power-domains = <&power RK3528_PD_VPU>;
+			resets = <&cru SRST_P_TSADC>, <&cru SRST_TSADC>;
+			reset-names = "tsadc-apb", "tsadc";
+			rockchip,grf = <&vpu_grf>;
+			rockchip,hw-tshut-mode = <0>;
+			rockchip,hw-tshut-polarity = <0>;
+			rockchip,hw-tshut-temp = <100000>;
+			#thermal-sensor-cells = <1>;
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+			sensor@0 {
+				reg = <0>;
+				nvmem-cells = <&tsadc_trim>;
+				nvmem-cell-names = "trim";
+			};
+		};
+
 		saradc: adc@ffae0000 {
 			compatible = "rockchip,rk3528-saradc";
 			reg = <0x0 0xffae0000 0x0 0x10000>;
@@ -1175,6 +1276,18 @@
 			status = "disabled";
 		};
 
+		sfc: spi@ffc00000 {
+			compatible = "rockchip,sfc";
+			reg = <0x0 0xffc00000 0x0 0x4000>;
+			clocks = <&cru SCLK_SFC>, <&cru HCLK_SFC>;
+			clock-names = "clk_sfc", "hclk_sfc";
+			interrupts = <GIC_SPI 135 IRQ_TYPE_LEVEL_HIGH>;
+			power-domains = <&power RK3528_PD_VPU>;
+			#address-cells = <1>;
+			#size-cells = <0>;
+			status = "disabled";
+		};
+
 		sdio0: mmc@ffc10000 {
 			compatible = "rockchip,rk3528-dw-mshc",
 				     "rockchip,rk3288-dw-mshc";
@@ -1235,6 +1348,55 @@
 			reset-names = "reset";
 			rockchip,default-sample-phase = <90>;
 			status = "disabled";
+		};
+
+		otp: nvmem@ffce0000 {
+			compatible = "rockchip,rk3528-otp";
+			reg = <0x0 0xffce0000 0x0 0x4000>;
+			clocks = <&cru CLK_USER_OTPC_NS>,
+				 <&cru PCLK_OTPC_NS>,
+				 <&cru CLK_SBPI_OTPC_NS>;
+			clock-names = "otp", "apb_pclk", "sbpi";
+			resets = <&cru SRST_USER_OTPC_NS>,
+				 <&cru SRST_P_OTPC_NS>,
+				 <&cru SRST_SBPI_OTPC_NS>;
+			reset-names = "otp", "apb", "sbpi";
+
+			nvmem-layout {
+				compatible = "fixed-layout";
+				#address-cells = <1>;
+				#size-cells = <1>;
+
+				cpu_code: cpu-code@2 {
+					reg = <0x02 0x2>;
+				};
+
+				otp_cpu_version: cpu-version@8 {
+					reg = <0x08 0x1>;
+					bits = <3 3>;
+				};
+
+				otp_id: id@a {
+					reg = <0x0a 0x10>;
+				};
+
+				cpu_leakage: cpu-leakage@1a {
+					reg = <0x1a 0x1>;
+				};
+
+				logic_leakage: logic-leakage@1b {
+					reg = <0x1b 0x1>;
+				};
+
+				gpu_leakage: gpu-leakage@1c {
+					reg = <0x1c 0x1>;
+				};
+
+				tsadc_trim: tsadc-trim@44 {
+					reg = <0x44 0x2>;
+					bits = <0 10>;
+				};
+			};
 		};
 
 		dmac: dma-controller@ffd60000 {
