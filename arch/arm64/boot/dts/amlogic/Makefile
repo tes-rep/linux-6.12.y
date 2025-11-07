@@ -72,4 +72,6 @@ dtb-$(CONFIG_ARCH_MESON) += meson-sm1-x96-max-plus-q2.dtb
 dtb-$(CONFIG_ARCH_MESON) += meson-sc2-s905x4-ah212.dtb
 dtb-$(CONFIG_ARCH_MESON) += meson-sc2-s905x4-gbit.dtb
 dtb-$(CONFIG_ARCH_MESON) += meson-sc2-s905x4-akari-ax810.dtb
-# dtb-$(CONFIG_ARCH_MESON) += meson-sc2-s905x4-advan.dtb
+dtb-$(CONFIG_ARCH_MESON) += meson-sc2-s905x4-advan.dtb
+dtb-$(CONFIG_ARCH_MESON) += meson-sc2-s905x4-ah212-gbit-4g.dts
+subdir-y       := $(dts-dirs) overlay
