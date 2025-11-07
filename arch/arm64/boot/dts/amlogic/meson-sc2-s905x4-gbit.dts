@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: (GPL-2.0+ OR MIT)
 /*
  * Copyright (c) 2019 Amlogic, Inc. All rights reserved.
-*
-* sibondt
-*/
+ *
+ * sibondt
+ */
 
 /dts-v1/;
 
@@ -35,7 +35,7 @@
 
 	memory {
 		device_type = "memory";
-		linux,usable-memory = <0x0 0x000000 0x0 0x80000000>;
+		linux,usable-memory = <0x00 0x00 0x00 0xf1000000>;
 	};
 
 	chosen {
@@ -80,6 +80,7 @@
 		regulator-name = "VBUS_PWR";
 		regulator-min-microvolt = <5000000>;
 		regulator-max-microvolt = <5000000>;
+//		vin-supply = <&vcc_5v>;
 
 		gpio = <&gpio GPIOH_6 GPIO_ACTIVE_HIGH>;
 		enable-active-high;
@@ -181,7 +182,6 @@
 		compatible = "amlogic,cpufreq-meson";
 		status = "okay";
 	};
-
 	i2c-led {
 		compatible = "i2c-gpio";
 		sda-gpios = <&gpio GPIOA_14 GPIO_ACTIVE_HIGH>;
@@ -397,6 +397,37 @@
 			function = "tsin_d";
 		};
 	};
+
+	eth_pins: eth {
+		mux {
+			groups = "eth_mdio",
+				 "eth_mdc",
+				 "eth_rgmii_rx_clk",
+				 "eth_rx_dv",
+				 "eth_rxd0",
+				 "eth_rxd1",
+				 "eth_txen",
+				 "eth_txd0",
+				 "eth_txd1";
+			function = "eth";
+			drive-strength-microamp = <4000>;
+			bias-disable;
+		};
+	};
+
+	eth_rgmii_pins: eth-rgmii {
+		mux {
+			groups = "eth_rxd2_rgmii",
+				 "eth_rxd3_rgmii",
+				 "eth_rgmii_tx_clk",
+				 "eth_txd2_rgmii",
+				 "eth_txd3_rgmii";
+			function = "eth";
+			drive-strength-microamp = <4000>;
+			bias-disable;
+		};
+	};
+
 }; /* end of periphs_pinctrl */
 
 &usb {
@@ -414,6 +445,8 @@
 
 	bus-width = <4>;
 	cap-sd-highspeed;
+	sd-uhs-sdr50;
+	sd-uhs-ddr50;
 	sd-uhs-sdr104;
 	max-frequency = <200000000>;
 
@@ -469,8 +502,27 @@
 
 &ethmac {
 	status = "okay";
-	phy-handle = <&internal_ephy>;
+
+	pinctrl-0 = <&eth_pins>, <&eth_rgmii_pins>;
+	pinctrl-names = "default";
 	phy-mode = "rgmii";
+	phy-handle = <&external_phy>;
+};
+
+&ext_mdio {
+	external_phy: ethernet-phy@0 {
+		/* Realtek RTL8211F (0x001cc916) */
+		reg = <0>;
+		max-speed = <1000>;
+
+		reset-assert-us = <10000>;
+		reset-deassert-us = <80000>;
+		reset-gpios = <&gpio GPIOZ_15 (GPIO_ACTIVE_LOW | GPIO_OPEN_DRAIN)>;
+
+		interrupt-parent = <&gpio_intc>;
+		/* MAC_INTR on GPIOZ_14 */
+		interrupts = <26 IRQ_TYPE_LEVEL_LOW>;
+	};
 };
 
 &spicc0 {
