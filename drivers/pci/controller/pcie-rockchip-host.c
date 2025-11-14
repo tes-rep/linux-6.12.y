@@ -689,8 +689,8 @@ static int rockchip_pcie_init_irq_domain(struct rockchip_pcie *rockchip)
 		return -EINVAL;
 	}
 
-	rockchip->irq_domain = irq_domain_add_linear(intc, PCI_NUM_INTX,
-						    &intx_domain_ops, rockchip);
+	rockchip->irq_domain = irq_domain_create_linear(of_fwnode_handle(intc), PCI_NUM_INTX,
+							&intx_domain_ops, rockchip);
 	of_node_put(intc);
 	if (!rockchip->irq_domain) {
 		dev_err(dev, "failed to get a INTx IRQ domain\n");
@@ -1046,7 +1046,7 @@ static struct platform_driver rockchip_pcie_driver = {
 		.pm = &rockchip_pcie_pm_ops,
 	},
 	.probe = rockchip_pcie_probe,
-	.remove_new = rockchip_pcie_remove,
+	.remove = rockchip_pcie_remove,
 };
 module_platform_driver(rockchip_pcie_driver);
 
