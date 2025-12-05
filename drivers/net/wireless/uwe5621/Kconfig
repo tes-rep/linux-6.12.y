@@ -1,5 +1,18 @@
-config UNISOC_UWE5621
-    tristate "Unisoc UWE5621 WiFi driver"
-    default m
+config AMLOGIC_UWE5621
+    tristate "Amlogic UWE5621 WiFi/BT driver"
+    depends on MMC || MMC_SDHCI
     help
-      WiFi driver for Unisoc UWE5621 chip.
+      Driver WiFi/Bluetooth UWE5621 untuk platform Amlogic.
+      Termasuk BSP SDIO dan driver WiFi Spreadtrum (sprdwl_ng).
+
+if AMLOGIC_UWE5621
+
+config UWE5621_SDIO
+    bool "Enable SDIO BSP"
+    default y
+
+config UWE5621_WIFI
+    bool "Enable WiFi module (sprdwl_ng)"
+    default y
+
+endif
