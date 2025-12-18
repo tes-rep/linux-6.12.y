@@ -219,8 +219,7 @@
 	status = "okay";
 	pinctrl-names = "default";
 	pinctrl-0 = <&rgmii_miim>, <&rgmii_tx_bus2>, <&rgmii_rx_bus2>, 
-		    <&rgmii_rgmii_clk>, <&rgmii_rgmii_bus>, <&eth_pins>,
-		    <&gmac1_reset_pin>;
+		    <&rgmii_rgmii_clk>, <&rgmii_rgmii_bus>, <&rgmii_clk>;
 
 	phy-supply = <&vcc_3v3_s3>;
 	phy-handle = <&rgmii_phy>;
@@ -229,11 +228,6 @@
 	clock_in_out = "output";
 	tx_delay = <0x36>;
 	rx_delay = <0x2d>;
-
-	snps,reset-active-low;
-	/* Reset time is 20ms, 100ms for rtl8211f */
-	snps,reset-delays-us = <0 20000 100000>;
-	snps,reset-gpio = <&gpio4 RK_PC2 GPIO_ACTIVE_LOW>;
 };
 
 &gpu {
@@ -243,9 +237,17 @@
 
 &mdio1 {
 	rgmii_phy: phy@1 {
-		compatible = "ethernet-phy-ieee802.3-c22";
+		/* Realtek RTL8211F (phyid 0x001cc916) */
+		compatible = "ethernet-phy-id001c.c916";
 		reg = <0x1>;
 		realtek,led-data = <0xc160>;
+
+		pinctrl-names = "default";
+		pinctrl-0 = <&gmac1_reset_pin>;
+		/* Reset time is 20ms, 100ms for rtl8211f */
+		reset-assert-us = <20000>;
+		reset-deassert-us = <100000>;
+		reset-gpios = <&gpio4 RK_PC2 GPIO_ACTIVE_LOW>;
 	};
 };
 
